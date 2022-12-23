@@ -62,8 +62,9 @@ export default class QuipPlugin extends Plugin {
 								let text = JSON.stringify(error.info);
 								new Notice(text);
 							} else {
-								let text = `Successfully published to ${response.thread.link}`;
-								new Notice(text);
+								// let text = `Successfully published to ${response.thread.link}`;
+								// new Notice(text);
+								new SuccessModal(this.app, response.thread.link).open();
 							}
 						});
 					}
@@ -99,6 +100,26 @@ export default class QuipPlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 }
+
+
+export class SuccessModal extends Modal {
+	link: string;
+
+	constructor(app: App, link: string) {
+	  super(app);
+	  this.link = link;
+	}
+  
+	onOpen() {
+	  let { contentEl } = this;
+	  contentEl.setText(`Successfully published to ${this.link}`);
+	}
+  
+	onClose() {
+	  let { contentEl } = this;
+	  contentEl.empty();
+	}
+  }
 
 class QuipSettingTab extends PluginSettingTab {
 	plugin: QuipPlugin;
