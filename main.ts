@@ -30,14 +30,11 @@ export default class QuipPlugin extends Plugin {
 					// If checking is true, we're simply "checking" if the command can be run.
 					// If checking is false, then we want to actually perform the operation.
 					if (!checking) {
-						let client_options = {
-							accessToken: this.settings.token,
-							clientId: undefined,
-							clientSecret: undefined
-						}
-						new QuipAPIClient(client_options);
+						let client = new QuipAPIClient(this.settings.hostname, this.settings.token);
 						console.log("Created Quip API client!")
-						new QuipModal(this.app).open();
+						let content = markdownView.getViewData()
+						console.log(content);
+						new QuipModal(this.app, content).open();
 					}
 
 					// This command will only show up in Command Palette when the check function returns true
@@ -73,16 +70,19 @@ export default class QuipPlugin extends Plugin {
 }
 
 class QuipModal extends Modal {
-	constructor(app: App) {
+	content: string;
+
+	constructor(app: App, content: string) {
 		super(app);
+		this.content = content;
 	}
 
 	onOpen() {
 		const {contentEl} = this;
-		contentEl.setText('Woah!');
+		contentEl.setText(this.content);
 	}
 
-	onClose() {
+	onClose(): void {
 		const {contentEl} = this;
 		contentEl.empty();
 	}
