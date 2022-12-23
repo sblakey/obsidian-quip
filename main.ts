@@ -3,11 +3,11 @@ import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Set
 // Remember to rename these classes and interfaces!
 
 interface QuipPluginSettings {
-	mySetting: string;
+	hostname: string;
 }
 
 const DEFAULT_SETTINGS: QuipPluginSettings = {
-	mySetting: 'default'
+	hostname: 'platform.quip.com'
 }
 
 export default class QuipPlugin extends Plugin {
@@ -91,17 +91,17 @@ class QuipSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		containerEl.createEl('h2', {text: 'Settings for my awesome plugin.'});
+		containerEl.createEl('h2', {text: 'Settings for publishing to Quip.'});
 
 		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
+			.setName('API hostname')
+			.setDesc('Endpoint for calls to the Quip automation API')
 			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
+				.setPlaceholder('platform.quip.com')
+				.setValue(this.plugin.settings.hostname)
 				.onChange(async (value) => {
-					console.log('Secret: ' + value);
-					this.plugin.settings.mySetting = value;
+					console.log(`Hostname: ${value}`);
+					this.plugin.settings.hostname = value;
 					await this.plugin.saveSettings();
 				}));
 	}
