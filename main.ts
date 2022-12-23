@@ -1,4 +1,5 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import QuipAPIClient from './quipapi';
 
 // Remember to rename these classes and interfaces!
 
@@ -29,6 +30,13 @@ export default class QuipPlugin extends Plugin {
 					// If checking is true, we're simply "checking" if the command can be run.
 					// If checking is false, then we want to actually perform the operation.
 					if (!checking) {
+						let client_options = {
+							accessToken: this.settings.token,
+							clientId: undefined,
+							clientSecret: undefined
+						}
+						new QuipAPIClient(client_options);
+						console.log("Created Quip API client!")
 						new QuipModal(this.app).open();
 					}
 
