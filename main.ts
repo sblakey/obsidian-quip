@@ -13,11 +13,13 @@ const DEFAULT_SETTINGS: QuipPluginSettings = {
 	token: ''
 }
 
+// TODO: move to quipapi.ts
 enum DocumentFormat {
 	HTML = "html",
 	MARKDOWN = "markdown"
 }
 
+// TODO: move to quipapi.ts
 interface NewDocumentOptions {
 	content: string;
 	title: string | undefined;
@@ -43,22 +45,25 @@ export default class QuipPlugin extends Plugin {
 					// If checking is false, then we want to actually perform the operation.
 					if (!checking) {
 						let client = new QuipAPIClient(this.settings.hostname, this.settings.token);
-						let content = markdownView.getViewData()
+						let title = markdownView.file.basename;
+						// Quip import likes to replace the first heading with the document title
+						let content = `# ${title}\n${markdownView.getViewData()}`;
 						console.log(content);
 						let options: NewDocumentOptions = {
 							content: content,
-							title: undefined,
+							title: title,
 							format: DocumentFormat.MARKDOWN,
 							memberIds: undefined
 						};
+						new Notice(`Publishing to ${this.settings.hostname}...`)
 						client.newDocument(options, (error: QuipAPIClientError, response: any) => {
 							if (error) {
 								console.log(error);
 								let text = JSON.stringify(error.info);
-								new QuipModal(this.app, text).open();
+								new Notice(text);
 							} else {
-								let text = JSON.stringify(response);
-								new QuipModal(this.app, text).open();
+								let text = `Successfully published to ${response.thread.link}`;
+								new Notice(text);
 							}
 						});
 					}
@@ -92,25 +97,6 @@ export default class QuipPlugin extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
-	}
-}
-
-class QuipModal extends Modal {
-	content: string;
-
-	constructor(app: App, content: string) {
-		super(app);
-		this.content = content;
-	}
-
-	onOpen() {
-		const {contentEl} = this;
-		contentEl.setText(this.content);
-	}
-
-	onClose(): void {
-		const {contentEl} = this;
-		contentEl.empty();
 	}
 }
 
