@@ -1,5 +1,5 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
-import QuipAPIClient from './quipapi';
+import { QuipAPIClientError, QuipAPIClient } from './quipapi';
 
 // Remember to rename these classes and interfaces!
 
@@ -13,6 +13,18 @@ const DEFAULT_SETTINGS: QuipPluginSettings = {
 	token: ''
 }
 
+enum DocumentFormat {
+	HTML = "html",
+	MARKDOWN = "markdown"
+}
+
+interface NewDocumentOptions {
+	content: string;
+	title: string | undefined;
+	format: DocumentFormat;
+	memberIds: string[] | undefined;
+}
+
 export default class QuipPlugin extends Plugin {
 	settings: QuipPluginSettings;
 
@@ -21,8 +33,8 @@ export default class QuipPlugin extends Plugin {
 
 		// This adds a complex command that can check whether the current state of the app allows execution of the command
 		this.addCommand({
-			id: 'open-sample-modal-complex',
-			name: 'Open sample modal (complex)',
+			id: 'quip-publish-modal-complex',
+			name: 'Publish as Markdown',
 			checkCallback: (checking: boolean) => {
 				// Conditions to check
 				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
@@ -31,10 +43,24 @@ export default class QuipPlugin extends Plugin {
 					// If checking is false, then we want to actually perform the operation.
 					if (!checking) {
 						let client = new QuipAPIClient(this.settings.hostname, this.settings.token);
-						console.log("Created Quip API client!")
 						let content = markdownView.getViewData()
 						console.log(content);
-						new QuipModal(this.app, content).open();
+						let options: NewDocumentOptions = {
+							content: content,
+							title: undefined,
+							format: DocumentFormat.MARKDOWN,
+							memberIds: undefined
+						};
+						client.newDocument(options, (error: QuipAPIClientError, response: any) => {
+							if (error) {
+								console.log(error);
+								let text = JSON.stringify(error.info);
+								new QuipModal(this.app, text).open();
+							} else {
+								let text = JSON.stringify(response);
+								new QuipModal(this.app, text).open();
+							}
+						});
 					}
 
 					// This command will only show up in Command Palette when the check function returns true
