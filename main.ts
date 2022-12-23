@@ -4,10 +4,12 @@ import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Set
 
 interface QuipPluginSettings {
 	hostname: string;
+	token: string;
 }
 
 const DEFAULT_SETTINGS: QuipPluginSettings = {
-	hostname: 'platform.quip.com'
+	hostname: 'platform.quip.com',
+	token: ''
 }
 
 export default class QuipPlugin extends Plugin {
@@ -93,6 +95,16 @@ class QuipSettingTab extends PluginSettingTab {
 
 		containerEl.createEl('h2', {text: 'Settings for publishing to Quip.'});
 
+		new Setting(containerEl)
+			.setName('Personal API Token')
+			.setDesc('Obtained from /dev/token on your Quip website')
+			.addText(text => text
+				.setValue(this.plugin.settings.token)
+				.onChange(async (value) => {
+					console.log(`Token: ${value}`);
+					this.plugin.settings.token = value;
+					await this.plugin.saveSettings();
+				}));
 		new Setting(containerEl)
 			.setName('API hostname')
 			.setDesc('Endpoint for calls to the Quip automation API')
