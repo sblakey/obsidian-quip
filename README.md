@@ -30,9 +30,12 @@ Your corporate account using Quip must meet the [License Requirements for access
 
 | If you normally use quip in the browser at | Your API hostname is         | You can get your dev token at         |
 | ------------------------------------------ | ---------------------------- | ------------------------------------- |
-| quip.com                                   | platform.quip.com.           | https://quip.com/dev/token            |
+| quip.com                                   | platform.quip.com            | https://quip.com/dev/token            |
 | CUSTOMER.onquip.com                        | platform.CUSTOMER.onquip.com | https://CUSTOMER.onquip.com/dev/token |
 | quip-CUSTOMER.com                          | platform.quip-CUSTOMER.com   | https://quip-CUSTOMER.com/dev/token   |
+
+
+Note that you can only have one "dev token" at a time across all of your automation tools: command-line scripts, Greasemonkey/Tampermonkey browser extensions, and plugins like this. Rather than just copy-pasting from the `/dev/token` URL, I highly recommend keeping this token in your password manager of choice (Bitwarden, 1Password, KeePass, etc.)
 
 ----
 
