@@ -6,6 +6,5 @@
 	"description": "This plugin provides a command to publish Markdown documents to Quip.com",
 	"author": "Sean Blakey",
 	"authorUrl": "https://hachyderm.io/@seanb",
-	"fundingUrl": "https://hachyderm.io/@seanb",
 	"isDesktopOnly": false
 }
