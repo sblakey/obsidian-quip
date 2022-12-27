@@ -1,5 +1,6 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { QuipAPIClientError, QuipAPIClient } from './quipapi';
+import render from './renderer';
 
 // Remember to rename these classes and interfaces!
 
@@ -33,9 +34,51 @@ export default class QuipPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
+
 		this.addCommand({
-			id: 'quip-publish-modal-complex',
+			id: 'quip-publish-html',
+			name: 'Publish as rendered HTML',
+			checkCallback: (checking: boolean) => {
+				// Conditions to check
+				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
+				if (markdownView) {
+					// If checking is true, we're simply "checking" if the command can be run.
+					// If checking is false, then we want to actually perform the operation.
+					if (!checking) {
+						let client = new QuipAPIClient(this.settings.hostname, this.settings.token);
+						let title = markdownView.file.basename;
+						// Quip import likes to replace the first heading with the document title
+						const htmlPromise = render(this, markdownView, markdownView.file.path);
+						htmlPromise.then((html: string) => {
+							console.log(html);
+							let options: NewDocumentOptions = {
+								content: html,
+								title: title,
+								format: DocumentFormat.HTML,
+								memberIds: undefined
+							};
+							new Notice(`Publishing to ${this.settings.hostname}...`)
+							client.newDocument(options, (error: QuipAPIClientError, response: any) => {
+								if (error) {
+									console.log(error);
+									let text = JSON.stringify(error.info);
+									new Notice(text);
+								} else {
+									// let text = `Successfully published to ${response.thread.link}`;
+									// new Notice(text);
+									new SuccessModal(this.app, response.thread.link).open();
+								}
+							});
+						});
+					}
+
+					// This command will only show up in Command Palette when the check function returns true
+					return true;
+				}
+			}
+		});
+		this.addCommand({
+			id: 'quip-publish-markdown',
 			name: 'Publish as Markdown',
 			checkCallback: (checking: boolean) => {
 				// Conditions to check
