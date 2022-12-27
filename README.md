@@ -52,7 +52,7 @@ Test table based on Obsdian's [How To Format Your Notes](https://help.obsidian.m
 | Task Lists        | :x:                       | :x:                    |
 | External images   | :white_check_mark:        | :white_check_mark:     |
 | resizing images   | :x:                       | :x:                    |
-| Block Quotes      | (treated as plain text)   | (trated as plain text) |
+| Block Quotes      | :x:                       | :x:                    |
 | Tables            | :white_check_mark:        | :white_check_mark:     |
 | Footnotes         | :x:                       | :x:                    |
 | Math              | :x:                       | :x:                    |
