@@ -8,12 +8,16 @@ interface QuipPluginSettings {
 	hostname: string;
 	token: string;
 	removeYAML: boolean;
+	addLink: boolean;
+	inlineEmbeds: boolean;
 }
 
 const DEFAULT_SETTINGS: QuipPluginSettings = {
 	hostname: 'platform.quip.com',
 	token: '',
-	removeYAML: true
+	removeYAML: true,
+	addLink: true,
+	inlineEmbeds: true
 }
 
 // TODO: move to quipapi.ts
@@ -66,9 +70,7 @@ export default class QuipPlugin extends Plugin {
 									let text = JSON.stringify(error.info);
 									new Notice(text);
 								} else {
-									// let text = `Successfully published to ${response.thread.link}`;
-									// new Notice(text);
-									new SuccessModal(this.app, response.thread.link).open();
+									this.onSuccessfulPublish(response.thread.link);
 								}
 							});
 						});
@@ -105,9 +107,7 @@ export default class QuipPlugin extends Plugin {
 									let text = JSON.stringify(error.info);
 									new Notice(text);
 								} else {
-									// let text = `Successfully published to ${response.thread.link}`;
-									// new Notice(text);
-									new SuccessModal(this.app, response.thread.link).open();
+									this.onSuccessfulPublish(response.thread.link);
 								}
 							});
 						})
@@ -130,6 +130,31 @@ export default class QuipPlugin extends Plugin {
 
 		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
 		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
+	}
+
+	onSuccessfulPublish(link: string): void {
+		console.log("Settings", this.settings);
+		if (this.settings.addLink) {
+			console.log("Adding link");
+			const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
+			this.app.fileManager.processFrontMatter(markdownView.file,
+				(frontMatter: any) => {
+					console.log("Front matter", frontMatter);
+					if ('quip' in frontMatter) {
+						let quip = frontMatter.quip;
+						if (Array.isArray(quip)) {
+							quip.push(link);
+						} else {
+							frontMatter.quip = [quip, link];
+						}
+					} else {
+						frontMatter.quip = link;
+					}
+					console.log("Front matter", frontMatter);
+				})
+		}
+		new SuccessModal(this.app, link).open();
+
 	}
 
 	onunload() {
@@ -216,6 +241,16 @@ class QuipSettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					console.log(`Remove YAML: ${value}`);
 					this.plugin.settings.removeYAML = value;
+					await this.plugin.saveSettings();
+				}));
+		new Setting(containerEl)
+			.setName('Add Quip link')
+			.setDesc('Insert a link to the published Quip document into YAML front matter')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.addLink)
+				.onChange(async (value) => {
+					console.log(`Add Link: ${value}`);
+					this.plugin.settings.addLink = value;
 					await this.plugin.saveSettings();
 				}));
 	}
