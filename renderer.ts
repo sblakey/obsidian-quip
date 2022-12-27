@@ -50,8 +50,10 @@ async function postProcessRenderedHTML(plugin: QuipPlugin, inputFile: string, wr
         }
     }
     // Remove YAML frontmatter from the output
-    Array.from(wrapper.querySelectorAll('.frontmatter, .frontmatter-container'))
-        .forEach(el => wrapper.removeChild(el));
+    if (plugin.settings.removeYAML) {
+        Array.from(wrapper.querySelectorAll('.frontmatter, .frontmatter-container'))
+            .forEach(el => wrapper.removeChild(el));
+    }
 }
 
 

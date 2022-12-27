@@ -7,11 +7,13 @@ import render from './renderer';
 interface QuipPluginSettings {
 	hostname: string;
 	token: string;
+	removeYAML: boolean;
 }
 
 const DEFAULT_SETTINGS: QuipPluginSettings = {
 	hostname: 'platform.quip.com',
-	token: ''
+	token: '',
+	removeYAML: true
 }
 
 // TODO: move to quipapi.ts
@@ -88,28 +90,27 @@ export default class QuipPlugin extends Plugin {
 					// If checking is false, then we want to actually perform the operation.
 					if (!checking) {
 						let client = new QuipAPIClient(this.settings.hostname, this.settings.token);
-						let title = markdownView.file.basename;
-						// Quip import likes to replace the first heading with the document title
-						let content = `# ${title}\n${markdownView.getViewData()}`;
-						console.log(content);
-						let options: NewDocumentOptions = {
-							content: content,
-							title: title,
-							format: DocumentFormat.MARKDOWN,
-							memberIds: undefined
-						};
-						new Notice(`Publishing to ${this.settings.hostname}...`)
-						client.newDocument(options, (error: QuipAPIClientError, response: any) => {
-							if (error) {
-								console.log(error);
-								let text = JSON.stringify(error.info);
-								new Notice(text);
-							} else {
-								// let text = `Successfully published to ${response.thread.link}`;
-								// new Notice(text);
-								new SuccessModal(this.app, response.thread.link).open();
-							}
-						});
+						const contentPromise = preProcessMarkdown(this, markdownView);
+						contentPromise.then((content:string) => {
+							let options: NewDocumentOptions = {
+								content: content,
+								title: undefined,
+								format: DocumentFormat.MARKDOWN,
+								memberIds: undefined
+							};
+							new Notice(`Publishing to ${this.settings.hostname}...`)
+							client.newDocument(options, (error: QuipAPIClientError, response: any) => {
+								if (error) {
+									console.log(error);
+									let text = JSON.stringify(error.info);
+									new Notice(text);
+								} else {
+									// let text = `Successfully published to ${response.thread.link}`;
+									// new Notice(text);
+									new SuccessModal(this.app, response.thread.link).open();
+								}
+							});
+						})
 					}
 
 					// This command will only show up in Command Palette when the check function returns true
@@ -155,7 +156,14 @@ export class SuccessModal extends Modal {
   
 	onOpen() {
 	  let { contentEl } = this;
-	  contentEl.setText(`Successfully published to ${this.link}`);
+	  //contentEl.setText(`Successfully published to ${this.link}`);
+	  contentEl.createEl('span', null, (span) => {
+		span.innerText = 'Successfully published to ';
+		span.createEl('a', null, (anchor) => {
+			anchor.href = this.link;
+			anchor.innerText = this.link;
+		});
+	  })
 	}
   
 	onClose() {
@@ -200,5 +208,30 @@ class QuipSettingTab extends PluginSettingTab {
 					this.plugin.settings.hostname = value;
 					await this.plugin.saveSettings();
 				}));
+		new Setting(containerEl)
+			.setName('Remove YAML front matter')
+			.setDesc('Strip leading YAML out of notes before sending to Quip')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.removeYAML)
+				.onChange(async (value) => {
+					console.log(`Remove YAML: ${value}`);
+					this.plugin.settings.removeYAML = value;
+					await this.plugin.saveSettings();
+				}));
 	}
+}
+
+
+async function preProcessMarkdown(plugin: QuipPlugin, view: MarkdownView): Promise<string> {
+	const title = view.file.basename;
+	let content = view.getViewData().trim();
+	console.log('Raw markdown content', content)
+	if (plugin.settings.removeYAML && content.startsWith('---')) {
+		const end_marker = content.indexOf('---', 3);
+		content = content.substring(end_marker + 3).trim();
+	console.log('Content after trimming YAML front matter', content)
+	}
+	// Quip import likes to replace the first heading with the document title
+	content = `# ${title}\n${content}`;
+	return content;
 }
