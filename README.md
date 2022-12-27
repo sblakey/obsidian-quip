@@ -37,6 +37,42 @@ Your corporate account using Quip must meet the [License Requirements for access
 
 Note that you can only have one "dev token" at a time across all of your automation tools: command-line scripts, Greasemonkey/Tampermonkey browser extensions, and plugins like this. Rather than just copy-pasting from the `/dev/token` URL, I highly recommend keeping this token in your password manager of choice (Bitwarden, 1Password, KeePass, etc.)
 
+## What Works, What Doesn't
+
+Test table based on Obsdian's [How To Format Your Notes](https://help.obsidian.md/How+to/Format+your+notes)
+
+| Obsidian Markdown | Quip: Publish as Markdown | Quip: Publish as HTML  |
+| ----------------- | ------------------------- | ---------------------- |
+| Internal linking  | :x:                       | :x:                    |
+| Embeds            | see below                 | see below              |
+| Headings          | :white_check_mark:        | :white_check_mark:     |
+| Unnumbered Lists  | :white_check_mark:        | :white_check_mark:     |
+| Numbered Lists    | :white_check_mark:        | :white_check_mark:     |
+| nested Lists      | :x:                       | :white_check_mark:     |
+| Task Lists        | :x:                       | :x:                    |
+| External images   | :white_check_mark:        | :white_check_mark:     |
+| resizing images   | :x:                       | :x:                    |
+| Block Quotes      | (treated as plain text)   | (trated as plain text) |
+| Tables            | :white_check_mark:        | :white_check_mark:     |
+| Footnotes         | :x:                       | :x:                    |
+| Math              | :x:                       | :x:                    |
+| Code              | :white_check_mark:        | :white_check_mark:     |
+| Highlighting      | :x:                       | :x:                    |
+| Comments          | :x:                       | :x:                    |
+| Callouts          | :x:                       | :x:                    |
+| Mermaid           | :x:                       | :x:                    |
+
+While many features fail under **both** Markdown and HTML publishing, they tend to "fail better" with HTML publishing, in
+that the Markdown publisher tends leave in-place the markdown code, while the HTML publisher tends to strip it out.
+
+### Configurable processing
+
+This plugin makes an effort at doing the following content processing in ways that you would expect of Obsidian. These can 
+be disabled in Settings:
+
+1. [YAML front matter](https://help.obsidian.md/Advanced+topics/YAML+front+matter), if present, will be stripped out of content before publishing.
+2. [Embed Notes](https://help.obsidian.md/How+to/Embed+files), if present, will be recursively parsed as markdown and inlined.
+
 ----
 
 # Notes from the Obsidian Sample Plugin
