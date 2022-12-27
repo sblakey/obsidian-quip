@@ -1,9 +1,9 @@
 {
-	"id": "obsidian-quip-publisher",
-	"name": "Quip Publisher",
+	"id": "obsidian-quip",
+	"name": "Quip",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "This plugin provides a command to publish Markdown documents to Quip.com",
+	"description": "This plugin provides commands to publish Markdown documents to Quip.com",
 	"author": "Sean Blakey",
 	"authorUrl": "https://hachyderm.io/@seanb",
 	"isDesktopOnly": false
