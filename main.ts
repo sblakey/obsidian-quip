@@ -1,4 +1,4 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, CachedMetadata, FileSystemAdapter, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
 import { QuipAPIClientError, QuipAPIClient } from './quipapi';
 import render from './renderer';
 
@@ -92,7 +92,7 @@ export default class QuipPlugin extends Plugin {
 					// If checking is false, then we want to actually perform the operation.
 					if (!checking) {
 						let client = new QuipAPIClient(this.settings.hostname, this.settings.token);
-						const contentPromise = preProcessMarkdown(this, markdownView);
+						const contentPromise = preProcessMarkdown(this, markdownView.file);
 						contentPromise.then((content:string) => {
 							let options: NewDocumentOptions = {
 								content: content,
@@ -135,7 +135,7 @@ export default class QuipPlugin extends Plugin {
 	onSuccessfulPublish(link: string): void {
 		console.log("Settings", this.settings);
 		if (this.settings.addLink) {
-			console.log("Adding link");
+			new Notice("Adding link to front matter");
 			const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
 			this.app.fileManager.processFrontMatter(markdownView.file,
 				(frontMatter: any) => {
@@ -257,14 +257,29 @@ class QuipSettingTab extends PluginSettingTab {
 }
 
 
-async function preProcessMarkdown(plugin: QuipPlugin, view: MarkdownView): Promise<string> {
-	const title = view.file.basename;
-	let content = view.getViewData().trim();
+async function preProcessMarkdown(plugin: QuipPlugin, file: TFile): Promise<string> {
+    const adapter = plugin.app.vault.adapter as FileSystemAdapter;
+	const title = file.basename;
+	let content = await adapter.read(file.path);
 	console.log('Raw markdown content', content)
 	if (plugin.settings.removeYAML && content.startsWith('---')) {
 		const end_marker = content.indexOf('---', 3);
 		content = content.substring(end_marker + 3).trim();
-	console.log('Content after trimming YAML front matter', content)
+		console.log('Content after trimming YAML front matter', content)
+	}
+	if (plugin.settings.inlineEmbeds) {
+		const cache: CachedMetadata = this.app.metadataCache.getCache(file.path)
+		console.log("Metadata", cache);
+		if ('embeds' in cache) {
+			for (const embed of cache.embeds) {
+				console.log("Embed", embed);
+				const subfolder = file.path.substring(adapter.getBasePath().length);  // TODO: this is messy
+				const embeddedFile = plugin.app.metadataCache.getFirstLinkpathDest(embed.link, subfolder);
+				const embeddedContent = await preProcessMarkdown(plugin, embeddedFile)
+				console.log("Embedded Content", embeddedContent);
+				content = content.replace(embed.original, embeddedContent);
+			}
+		}
 	}
 	// Quip import likes to replace the first heading with the document title
 	content = `# ${title}\n${content}`;

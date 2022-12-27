@@ -23,29 +23,31 @@ async function postProcessRenderedHTML(plugin: QuipPlugin, inputFile: string, wr
         span.innerHTML = '';
         span.outerHTML = span.outerHTML.replace(/span/g, 'img');
     }
-    // Fix <span class='internal-embed' src='another_note_without_extension'>
-    for (let span of Array.from(wrapper.querySelectorAll('span.internal-embed'))) {
-        let src = span.getAttribute('src');
-        if (src) {
-            const subfolder = inputFile.substring(adapter.getBasePath().length);  // TODO: this is messy
-            const file = plugin.app.metadataCache.getFirstLinkpathDest(src, subfolder);
-            try {
-                if (parentFiles.indexOf(file.path) !== -1) {
-                    // We've got an infinite recursion on our hands
-                    // We should replace the embed with a wikilink
-                    // Then our link processing happens afterwards
-                    span.outerHTML = `<a href="${file}">${span.innerHTML}</a>`;
-                } else {
-                    const markdown = await adapter.read(file.path);
-                    const newParentFiles = [...parentFiles];
-                    newParentFiles.push(inputFile);
-                    // TODO: because of this cast, embedded notes won't be able to handle complex plugins (eg DataView)
-                    const html = await render(plugin, { data: markdown } as MarkdownView, file.path, newParentFiles);
-                    span.outerHTML = html;
+    if (plugin.settings.inlineEmbeds) {
+        // Fix <span class='internal-embed' src='another_note_without_extension'>
+        for (let span of Array.from(wrapper.querySelectorAll('span.internal-embed'))) {
+            let src = span.getAttribute('src');
+            if (src) {
+                const subfolder = inputFile.substring(adapter.getBasePath().length);  // TODO: this is messy
+                const file = plugin.app.metadataCache.getFirstLinkpathDest(src, subfolder);
+                try {
+                    if (parentFiles.indexOf(file.path) !== -1) {
+                        // We've got an infinite recursion on our hands
+                        // We should replace the embed with a wikilink
+                        // Then our link processing happens afterwards
+                        span.outerHTML = `<a href="${file}">${span.innerHTML}</a>`;
+                    } else {
+                        const markdown = await adapter.read(file.path);
+                        const newParentFiles = [...parentFiles];
+                        newParentFiles.push(inputFile);
+                        // TODO: because of this cast, embedded notes won't be able to handle complex plugins (eg DataView)
+                        const html = await render(plugin, { data: markdown } as MarkdownView, file.path, newParentFiles);
+                        span.outerHTML = html;
+                    }
+                } catch (e) {
+                    // Continue if it can't be loaded
+                    console.error("Pandoc plugin encountered an error trying to load an embedded note: " + e.toString());
                 }
-            } catch (e) {
-                // Continue if it can't be loaded
-                console.error("Pandoc plugin encountered an error trying to load an embedded note: " + e.toString());
             }
         }
     }
