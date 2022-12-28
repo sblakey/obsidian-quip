@@ -52,14 +52,13 @@ export default class QuipPlugin extends Plugin {
 					// If checking is false, then we want to actually perform the operation.
 					if (!checking) {
 						let client = new QuipAPIClient(this.settings.hostname, this.settings.token);
-						let title = markdownView.file.basename;
 						// Quip import likes to replace the first heading with the document title
 						const htmlPromise = render(this, markdownView, markdownView.file.path);
 						htmlPromise.then((html: string) => {
 							console.log(html);
 							let options: NewDocumentOptions = {
 								content: html,
-								title: title,
+								title: undefined,
 								format: DocumentFormat.HTML,
 								memberIds: undefined
 							};
@@ -251,6 +250,16 @@ class QuipSettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					console.log(`Add Link: ${value}`);
 					this.plugin.settings.addLink = value;
+					await this.plugin.saveSettings();
+				}));
+		new Setting(containerEl)
+			.setName('Inline embedded notes')
+			.setDesc('Replace embed-links with the content of those notes')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.inlineEmbeds)
+				.onChange(async (value) => {
+					console.log(`Add Link: ${value}`);
+					this.plugin.settings.inlineEmbeds = value;
 					await this.plugin.saveSettings();
 				}));
 	}

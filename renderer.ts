@@ -77,22 +77,20 @@ export default async function render (plugin: QuipPlugin, view: MarkdownView,
     document.body.removeChild(wrapper);
 
     // If it's a top level note, make the HTML a standalone document - inject CSS, a <title>, etc.
-    const title = fileBaseName(inputFile);
     if (parentFiles.length === 0) {
-        html = await standaloneHTML(html, title);
+        html = await standaloneHTML(html);
     }
 
     return html;
 }
 
-async function standaloneHTML(html: string, title: string): Promise<string> {
+async function standaloneHTML(html: string): Promise<string> {
     // Wraps an HTML fragment in a proper document structure
     // Don't bother with CSS Quip will ignore
 
     return `<!doctype html>\n` +
         `<html>\n` +
         `    <head>\n` +
-        `        <title>${title}</title>\n` +
         `        <meta charset='utf-8'/>\n` +
         `    </head>\n` +
         `    <body>\n` +

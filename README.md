@@ -14,7 +14,7 @@ Currently, this plugin exposes two Commands:
 ## Installing this plugin as a Beta Tester
 
 1. Install [BRAT](https://github.com/TfTHacker/obsidian42-brat) from the Community Plugins in Obsidian
-2. Copy the link https://github.com/sblakey/obsidian-quip.git
+2. Copy the link https://github.com/sblakey/obsidian-quip
 3. Open the command palette and run the command **BRAT: Add a beta plugin for testing**
 4. Using the link from step 2, copy that into the modal that opens up
 5. Click on Add Plugin -- wait a few seconds and BRAT will tell you what is going on
