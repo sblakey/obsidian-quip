@@ -13,6 +13,22 @@ function fileBaseName(file: string): string {
     return path.basename(file, path.extname(file));
 }
 
+interface LookupTable {
+    [index: string]: string
+}
+
+const mimeTypeTable : LookupTable = {
+    bmp: 'image/x-ms-bmp',
+    gif: 'image/gif',
+    jpeg: 'image/jpeg',
+    jpg: 'image/jpeg',
+    png: 'image/png',
+    svg: 'image/svg+xml',
+    tif: 'image/tiff',
+    tiff: 'image/tiff',
+    webp: 'image/webp'
+}
+
 
 async function postProcessRenderedHTML(plugin: QuipPlugin, inputFile: string, wrapper: HTMLElement,
     parentFiles: string[] = [])
@@ -24,6 +40,24 @@ async function postProcessRenderedHTML(plugin: QuipPlugin, inputFile: string, wr
         span.outerHTML = span.outerHTML.replace(/span/g, 'img');
     }
     if (plugin.settings.inlineEmbeds) {
+        // Fix <img class='internal-embed' src='file_in_vault'>
+        for (let span of Array.from(wrapper.querySelectorAll('img.internal-embed'))) {
+            let src = span.getAttribute('src');
+            if (src) {
+                const subfolder = inputFile.substring(adapter.getBasePath().length);  // TODO: this is messy
+                const file = plugin.app.metadataCache.getFirstLinkpathDest(src, subfolder);
+                try {
+                    const bytes = await adapter.readBinary(file.path);
+                    const type = mimeTypeTable[file.extension] ?? 'image/jpeg';
+                    const encoded = Buffer.from(bytes).toString('base64');
+                    span.setAttribute('src', `data:${type};base64,${encoded}`);
+
+                } catch (e) {
+                    // Continue if it can't be loaded
+                    console.error("Quip plugin encountered an error trying to load an embedded image: " + e.toString());
+                }
+            }
+        }
         // Fix <span class='internal-embed' src='another_note_without_extension'>
         for (let span of Array.from(wrapper.querySelectorAll('span.internal-embed'))) {
             let src = span.getAttribute('src');
@@ -46,7 +80,7 @@ async function postProcessRenderedHTML(plugin: QuipPlugin, inputFile: string, wr
                     }
                 } catch (e) {
                     // Continue if it can't be loaded
-                    console.error("Pandoc plugin encountered an error trying to load an embedded note: " + e.toString());
+                    console.error("Quip plugin encountered an error trying to load an embedded note: " + e.toString());
                 }
             }
         }
