@@ -1,4 +1,4 @@
-import { App, CachedMetadata, FileSystemAdapter, MarkdownView, Modal, Notice, Plugin, TFile } from 'obsidian';
+import { App, Editor, MarkdownFileInfo, MarkdownView, Modal, Notice, Plugin, TFile } from 'obsidian';
 import { QuipAPIClient } from './quipapi';
 import render from './renderer';
 import { DEFAULT_SETTINGS, QuipPluginSettings, QuipSettingTab } from './settings';
@@ -20,11 +20,13 @@ export default class QuipPlugin extends Plugin {
 
 		this.addCommand({
 			id: 'quip-publish-html',
-			name: 'Publish as rendered HTML',
-			checkCallback: (checking: boolean) => {
+			name: 'Publish as new Quip document',
+			editorCheckCallback: (checking: boolean, editor: Editor, ctx: MarkdownView | MarkdownFileInfo) => {
 				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
+				if (ctx instanceof MarkdownView) {
+					const markdownView = ctx;
+					// If checking is true, we're simply "checking" if the command can be run.
+					// If checking is false, then we want to actually perform the operation.
 					if (!checking) {
 						this.publishHTML(markdownView);
 					}
@@ -107,35 +109,4 @@ export class SuccessModal extends Modal {
 		const { contentEl } = this;
 		contentEl.empty();
 	}
-}
-
-
-
-async function preProcessMarkdown(plugin: QuipPlugin, file: TFile): Promise<string> {
-    const adapter = plugin.app.vault.adapter as FileSystemAdapter;
-	const title = file.basename;
-	let content = await adapter.read(file.path);
-	console.log('Raw markdown content', content)
-	if (plugin.settings.removeYAML && content.startsWith('---')) {
-		const end_marker = content.indexOf('---', 3);
-		content = content.substring(end_marker + 3).trim();
-		console.log('Content after trimming YAML front matter', content)
-	}
-	if (plugin.settings.inlineEmbeds) {
-		const cache: CachedMetadata = this.app.metadataCache.getCache(file.path)
-		console.log("Metadata", cache);
-		if ('embeds' in cache) {
-			for (const embed of cache.embeds) {
-				console.log("Embed", embed);
-				const subfolder = file.path.substring(adapter.getBasePath().length);  // TODO: this is messy
-				const embeddedFile = plugin.app.metadataCache.getFirstLinkpathDest(embed.link, subfolder);
-				const embeddedContent = await preProcessMarkdown(plugin, embeddedFile)
-				console.log("Embedded Content", embeddedContent);
-				content = content.replace(embed.original, embeddedContent);
-			}
-		}
-	}
-	// Quip import likes to replace the first heading with the document title
-	content = `# ${title}\n${content}`;
-	return content;
 }
