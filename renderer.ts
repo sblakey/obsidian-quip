@@ -27,14 +27,14 @@ async function postProcessRenderedHTML(plugin: QuipPlugin, inputFile: string, wr
 {
     const adapter = plugin.app.vault.adapter as FileSystemAdapter;
     // Fix <span src="image.png">
-    for (let span of Array.from(wrapper.querySelectorAll('span[src$=".png"], span[src$=".jpg"], span[src$=".gif"], span[src$=".jpeg"]'))) {
+    for (const span of Array.from(wrapper.querySelectorAll('span[src$=".png"], span[src$=".jpg"], span[src$=".gif"], span[src$=".jpeg"]'))) {
         span.innerHTML = '';
         span.outerHTML = span.outerHTML.replace(/span/g, 'img');
     }
     if (plugin.settings.inlineEmbeds) {
         // Fix <img class='internal-embed' src='file_in_vault'>
-        for (let span of Array.from(wrapper.querySelectorAll('img.internal-embed'))) {
-            let src = span.getAttribute('src');
+        for (const span of Array.from(wrapper.querySelectorAll('img.internal-embed'))) {
+            const src = span.getAttribute('src');
             if (src) {
                 const subfolder = inputFile.substring(adapter.getBasePath().length);  // TODO: this is messy
                 const file = plugin.app.metadataCache.getFirstLinkpathDest(src, subfolder);
@@ -51,8 +51,8 @@ async function postProcessRenderedHTML(plugin: QuipPlugin, inputFile: string, wr
             }
         }
         // Fix <span class='internal-embed' src='another_note_without_extension'>
-        for (let span of Array.from(wrapper.querySelectorAll('span.internal-embed'))) {
-            let src = span.getAttribute('src');
+        for (const span of Array.from(wrapper.querySelectorAll('span.internal-embed'))) {
+            const src = span.getAttribute('src');
             if (src) {
                 const subfolder = inputFile.substring(adapter.getBasePath().length);  // TODO: this is messy
                 const file = plugin.app.metadataCache.getFirstLinkpathDest(src, subfolder);

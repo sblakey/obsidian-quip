@@ -92,7 +92,8 @@ export class SuccessModal extends Modal {
 	}
   
 	onOpen() {
-	  let { contentEl } = this;
+	  const { contentEl } = this;
+	  //contentEl.setText(`Successfully published to ${this.link}`);
 	  contentEl.createEl('span', null, (span) => {
 		span.innerText = 'Successfully published to ';
 		span.createEl('a', null, (anchor) => {
@@ -103,7 +104,7 @@ export class SuccessModal extends Modal {
 	}
   
 	onClose() {
-	  let { contentEl } = this;
+	  const { contentEl } = this;
 	  contentEl.empty();
 	}
   }
