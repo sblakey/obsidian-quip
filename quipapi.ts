@@ -55,6 +55,10 @@ export interface QuipThreadResponse {
 	thread: QuipThreadInfo;
 }
 
+enum WrappedMethod {
+    NEW_DOCUMENT = "newDocument"
+}
+
 export class QuipAPIClient extends Client {
     hostname: string;
 
@@ -68,16 +72,26 @@ export class QuipAPIClient extends Client {
         this.hostname = hostname;
     }
 
-
-    newHTMLDocument(html: string,
-        callback: (error: QuipAPIClientError, response: QuipThreadResponse) => void) {
+    async newHTMLDocument(html: string): Promise<QuipThreadResponse> {
         const options: NewDocumentOptions = {
             content: html,
             title: undefined,
             format: DocumentFormat.HTML,
             memberIds: undefined
         };
-        this.newDocument(options, callback);
+        return this._async_newDocument(options);
+    }
+
+    async _async_newDocument(options: NewDocumentOptions): Promise<QuipThreadResponse> {
+        return new Promise(((resolve, reject) => {
+            this.newDocument(options, (error: QuipAPIClientError, response: QuipThreadResponse) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(response);
+                }
+            })
+        }));
     }
 
     call_(path: string,

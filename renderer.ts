@@ -1,17 +1,9 @@
 // branched from MIT-licensed code at 
 // https://github.com/OliverBalfour/obsidian-pandoc/blob/master/renderer.ts
 
-import * as path from 'path';
-
 import QuipPlugin from './main';
 
-import { FileSystemAdapter, MarkdownRenderer, MarkdownView } from 'obsidian';
-
-// Takes any file path like '/home/oliver/zettelkasten/Obsidian.md' and
-// takes the base name, in this case 'Obsidian'
-function fileBaseName(file: string): string {
-    return path.basename(file, path.extname(file));
-}
+import { FileSystemAdapter, MarkdownRenderer, MarkdownView, TFile } from 'obsidian';
 
 interface LookupTable {
     [index: string]: string
@@ -75,7 +67,7 @@ async function postProcessRenderedHTML(plugin: QuipPlugin, inputFile: string, wr
                         const newParentFiles = [...parentFiles];
                         newParentFiles.push(inputFile);
                         // TODO: because of this cast, embedded notes won't be able to handle complex plugins (eg DataView)
-                        const html = await render(plugin, { data: markdown } as MarkdownView, file.path, newParentFiles);
+                        const html = await render(plugin, { data: markdown } as MarkdownView, file, newParentFiles);
                         span.outerHTML = html;
                     }
                 } catch (e) {
@@ -94,7 +86,7 @@ async function postProcessRenderedHTML(plugin: QuipPlugin, inputFile: string, wr
 
 
 export default async function render (plugin: QuipPlugin, view: MarkdownView,
-    inputFile: string, parentFiles: string[] = []):
+    inputFile: TFile, parentFiles: string[] = []):
     Promise<string>
 {
     // Use Obsidian's markdown renderer to render to a hidden <div>
@@ -102,10 +94,11 @@ export default async function render (plugin: QuipPlugin, view: MarkdownView,
     const wrapper = document.createElement('div');
     wrapper.style.display = 'hidden';
     document.body.appendChild(wrapper);
-    await MarkdownRenderer.renderMarkdown(markdown, wrapper, path.dirname(inputFile), view);
+    const sourcePath = inputFile.parent.path;
+    await MarkdownRenderer.renderMarkdown(markdown, wrapper, sourcePath, view);
 
     // Post-process the HTML in-place
-    await postProcessRenderedHTML(plugin, inputFile, wrapper,
+    await postProcessRenderedHTML(plugin, inputFile.path, wrapper,
         parentFiles);
     let html = wrapper.innerHTML;
     document.body.removeChild(wrapper);

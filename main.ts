@@ -1,5 +1,5 @@
-import { App, CachedMetadata, FileSystemAdapter, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
-import { QuipAPIClientError, QuipAPIClient, QuipThreadResponse } from './quipapi';
+import { App, CachedMetadata, FileSystemAdapter, MarkdownView, Modal, Notice, Plugin, TFile } from 'obsidian';
+import { QuipAPIClient } from './quipapi';
 import render from './renderer';
 import { DEFAULT_SETTINGS, QuipPluginSettings, QuipSettingTab } from './settings';
 
@@ -25,25 +25,8 @@ export default class QuipPlugin extends Plugin {
 				// Conditions to check
 				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
 				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
 					if (!checking) {
-						let client = new QuipAPIClient(this.settings.hostname, this.settings.token);
-						// Quip import likes to replace the first heading with the document title
-						const htmlPromise = render(this, markdownView, markdownView.file.path);
-						htmlPromise.then((html: string) => {
-							console.log(html);
-							new Notice(`Publishing to ${this.settings.hostname}...`)
-							client.newHTMLDocument(html, (error: QuipAPIClientError, response: QuipThreadResponse) => {
-								if (error) {
-									console.log(error);
-									let text = JSON.stringify(error.info);
-									new Notice(text);
-								} else {
-									this.onSuccessfulPublish(response.thread.link);
-								}
-							});
-						});
+						this.publishHTML(markdownView);
 					}
 
 					// This command will only show up in Command Palette when the check function returns true
@@ -54,6 +37,22 @@ export default class QuipPlugin extends Plugin {
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new QuipSettingTab(this.app, this));
+	}
+
+	async publishHTML(markdownView: MarkdownView) {
+		let client = new QuipAPIClient(this.settings.hostname, this.settings.token);
+		// Quip import likes to replace the first heading with the document title
+		const html = await render(this, markdownView, markdownView.file);
+		console.log(html);
+		new Notice(`Publishing to ${this.settings.hostname}...`)
+		try {
+			const response = await client.newHTMLDocument(html);
+			this.onSuccessfulPublish(response.thread.link);
+		} catch (error) {
+			console.log(error);
+			let text = JSON.stringify(error.info);
+			new Notice(text);
+		}
 	}
 
 	onSuccessfulPublish(link: string): void {
