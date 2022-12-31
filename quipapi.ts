@@ -34,6 +34,27 @@ export class QuipAPIClientError extends ClientError {
 
 }
 
+
+enum DocumentFormat {
+	HTML = "html",
+	MARKDOWN = "markdown"
+}
+
+interface NewDocumentOptions {
+	content: string;
+	title: string | undefined;
+	format: DocumentFormat;
+	memberIds: string[] | undefined;
+}
+
+interface QuipThreadInfo {
+	link: string;
+}
+
+export interface QuipThreadResponse {
+	thread: QuipThreadInfo;
+}
+
 export class QuipAPIClient extends Client {
     hostname: string;
 
@@ -45,6 +66,18 @@ export class QuipAPIClient extends Client {
         }
         super(client_options);
         this.hostname = hostname;
+    }
+
+
+    newHTMLDocument(html: string,
+        callback: (error: QuipAPIClientError, response: QuipThreadResponse) => void) {
+        const options: NewDocumentOptions = {
+            content: html,
+            title: undefined,
+            format: DocumentFormat.HTML,
+            memberIds: undefined
+        };
+        this.newDocument(options, callback);
     }
 
     call_(path: string,

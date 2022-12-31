@@ -1,5 +1,5 @@
 import { App, CachedMetadata, FileSystemAdapter, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
-import { QuipAPIClientError, QuipAPIClient } from './quipapi';
+import { QuipAPIClientError, QuipAPIClient, QuipThreadResponse } from './quipapi';
 import render from './renderer';
 import { DEFAULT_SETTINGS, QuipPluginSettings, QuipSettingTab } from './settings';
 
@@ -10,27 +10,6 @@ interface QuipFrontMatter {
 }
 
 
-// TODO: move to quipapi.ts
-enum DocumentFormat {
-	HTML = "html",
-	MARKDOWN = "markdown"
-}
-
-// TODO: move to quipapi.ts
-interface NewDocumentOptions {
-	content: string;
-	title: string | undefined;
-	format: DocumentFormat;
-	memberIds: string[] | undefined;
-}
-
-interface QuipThreadInfo {
-	link: string;
-}
-
-interface QuipThreadResponse {
-	thread: QuipThreadInfo;
-}
 
 export default class QuipPlugin extends Plugin {
 	settings: QuipPluginSettings;
@@ -54,14 +33,8 @@ export default class QuipPlugin extends Plugin {
 						const htmlPromise = render(this, markdownView, markdownView.file.path);
 						htmlPromise.then((html: string) => {
 							console.log(html);
-							let options: NewDocumentOptions = {
-								content: html,
-								title: undefined,
-								format: DocumentFormat.HTML,
-								memberIds: undefined
-							};
 							new Notice(`Publishing to ${this.settings.hostname}...`)
-							client.newDocument(options, (error: QuipAPIClientError, response: QuipThreadResponse) => {
+							client.newHTMLDocument(html, (error: QuipAPIClientError, response: QuipThreadResponse) => {
 								if (error) {
 									console.log(error);
 									let text = JSON.stringify(error.info);
@@ -71,43 +44,6 @@ export default class QuipPlugin extends Plugin {
 								}
 							});
 						});
-					}
-
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
-				}
-			}
-		});
-		this.addCommand({
-			id: 'quip-publish-markdown',
-			name: 'Publish as Markdown',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						let client = new QuipAPIClient(this.settings.hostname, this.settings.token);
-						const contentPromise = preProcessMarkdown(this, markdownView.file);
-						contentPromise.then((content:string) => {
-							let options: NewDocumentOptions = {
-								content: content,
-								title: undefined,
-								format: DocumentFormat.MARKDOWN,
-								memberIds: undefined
-							};
-							new Notice(`Publishing to ${this.settings.hostname}...`)
-							client.newDocument(options, (error: QuipAPIClientError, response: QuipThreadResponse) => {
-								if (error) {
-									console.log(error);
-									let text = JSON.stringify(error.info);
-									new Notice(text);
-								} else {
-									this.onSuccessfulPublish(response.thread.link);
-								}
-							});
-						})
 					}
 
 					// This command will only show up in Command Palette when the check function returns true
