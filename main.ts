@@ -1,25 +1,14 @@
 import { App, CachedMetadata, FileSystemAdapter, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
 import { QuipAPIClientError, QuipAPIClient } from './quipapi';
 import render from './renderer';
-import QuipSettingTab from './settings';
+import { DEFAULT_SETTINGS, QuipPluginSettings, QuipSettingTab } from './settings';
 
 // Remember to rename these classes and interfaces!
 
-interface QuipPluginSettings {
-	hostname: string;
-	token: string;
-	removeYAML: boolean;
-	addLink: boolean;
-	inlineEmbeds: boolean;
+interface QuipFrontMatter {
+	quip: string;
 }
 
-const DEFAULT_SETTINGS: QuipPluginSettings = {
-	hostname: 'platform.quip.com',
-	token: '',
-	removeYAML: true,
-	addLink: true,
-	inlineEmbeds: true
-}
 
 // TODO: move to quipapi.ts
 enum DocumentFormat {
@@ -33,6 +22,14 @@ interface NewDocumentOptions {
 	title: string | undefined;
 	format: DocumentFormat;
 	memberIds: string[] | undefined;
+}
+
+interface QuipThreadInfo {
+	link: string;
+}
+
+interface QuipThreadResponse {
+	thread: QuipThreadInfo;
 }
 
 export default class QuipPlugin extends Plugin {
@@ -64,7 +61,7 @@ export default class QuipPlugin extends Plugin {
 								memberIds: undefined
 							};
 							new Notice(`Publishing to ${this.settings.hostname}...`)
-							client.newDocument(options, (error: QuipAPIClientError, response: any) => {
+							client.newDocument(options, (error: QuipAPIClientError, response: QuipThreadResponse) => {
 								if (error) {
 									console.log(error);
 									let text = JSON.stringify(error.info);
@@ -101,7 +98,7 @@ export default class QuipPlugin extends Plugin {
 								memberIds: undefined
 							};
 							new Notice(`Publishing to ${this.settings.hostname}...`)
-							client.newDocument(options, (error: QuipAPIClientError, response: any) => {
+							client.newDocument(options, (error: QuipAPIClientError, response: QuipThreadResponse) => {
 								if (error) {
 									console.log(error);
 									let text = JSON.stringify(error.info);
@@ -129,19 +126,8 @@ export default class QuipPlugin extends Plugin {
 			new Notice("Adding link to front matter");
 			const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
 			this.app.fileManager.processFrontMatter(markdownView.file,
-				(frontMatter: any) => {
-					console.log("Front matter", frontMatter);
-					if ('quip' in frontMatter) {
-						let quip = frontMatter.quip;
-						if (Array.isArray(quip)) {
-							quip.push(link);
-						} else {
-							frontMatter.quip = [quip, link];
-						}
-					} else {
-						frontMatter.quip = link;
-					}
-					console.log("Front matter", frontMatter);
+				(frontMatter: QuipFrontMatter) => {
+					frontMatter.quip = link;
 				})
 		}
 		new SuccessModal(this.app, link).open();
@@ -172,7 +158,6 @@ export class SuccessModal extends Modal {
   
 	onOpen() {
 	  let { contentEl } = this;
-	  //contentEl.setText(`Successfully published to ${this.link}`);
 	  contentEl.createEl('span', null, (span) => {
 		span.innerText = 'Successfully published to ';
 		span.createEl('a', null, (anchor) => {

@@ -5,7 +5,7 @@ import * as path from 'path';
 
 import QuipPlugin from './main';
 
-import { FileSystemAdapter, MarkdownRenderer, MarkdownView, Notice } from 'obsidian';
+import { FileSystemAdapter, MarkdownRenderer, MarkdownView } from 'obsidian';
 
 // Takes any file path like '/home/oliver/zettelkasten/Obsidian.md' and
 // takes the base name, in this case 'Obsidian'
