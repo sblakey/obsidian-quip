@@ -1,13 +1,5 @@
-import { Client, ClientError } from 'quip';
-
 var https = require('https');
 var querystring = require('querystring');
-
-interface ClientOptions {
-    accessToken: string;
-    clientId: string | undefined;
-    clientSecret: string | undefined;
-}
 
 enum RequestMethod {
     GET = "GET",
@@ -22,14 +14,16 @@ interface RequestOptions {
     method: RequestMethod;
 }
 
-export class QuipAPIClientError extends ClientError {
+export class QuipAPIClientError extends Error {
     name: string;
-    message: string;
+    response: any;
+    info: any;
 
-    constructor(httpResponse: any, info: Object) {
-        super(httpResponse, info);
+    constructor(response: any, info: any) {
+        super("Error invoking Quip API");
         this.name = "QuipAPIClientError";
-        this.message = JSON.stringify(info);
+        this.response = response;
+        this.info = info;
     }
 
 }
@@ -55,20 +49,12 @@ export interface QuipThreadResponse {
 	thread: QuipThreadInfo;
 }
 
-enum WrappedMethod {
-    NEW_DOCUMENT = "newDocument"
-}
-
-export class QuipAPIClient extends Client {
+export class QuipAPIClient {
+    accessToken: string;
     hostname: string;
 
     constructor(hostname: string, token: string) {
-        let client_options: ClientOptions = {
-            accessToken: token,
-            clientId: undefined,
-            clientSecret: undefined
-        }
-        super(client_options);
+        this.accessToken = token;
         this.hostname = hostname;
     }
 
@@ -92,6 +78,15 @@ export class QuipAPIClient extends Client {
                 }
             })
         }));
+    }
+
+    newDocument(options: NewDocumentOptions, callback: (error: QuipAPIClientError, response: QuipThreadResponse) => void): void {
+        var args = {
+            'content': options.content,
+            'title': options.title,
+            'format': options.format
+        };
+        this.call_('threads/new-document', callback, args);
     }
 
     call_(path: string,
