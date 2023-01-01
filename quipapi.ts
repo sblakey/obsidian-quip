@@ -1,6 +1,3 @@
-var https = require('https');
-var querystring = require('querystring');
-
 enum RequestMethod {
     GET = "GET",
     POST = "POST"
@@ -12,6 +9,12 @@ interface RequestOptions {
     path: string;
     headers: {[index: string]:any};
     method: RequestMethod;
+    body?: string;
+}
+
+interface FetchRequestOptions {
+    headers: Headers;
+    body?: URLSearchParams;
 }
 
 export class QuipAPIClientError extends Error {
@@ -27,7 +30,6 @@ export class QuipAPIClientError extends Error {
     }
 
 }
-
 
 enum DocumentFormat {
 	HTML = "html",
@@ -65,86 +67,40 @@ export class QuipAPIClient {
             format: DocumentFormat.HTML,
             memberIds: undefined
         };
-        return this._async_newDocument(options);
+        return this.newDocument(options);
     }
 
-    async _async_newDocument(options: NewDocumentOptions): Promise<QuipThreadResponse> {
-        return new Promise(((resolve, reject) => {
-            this.newDocument(options, (error: QuipAPIClientError, response: QuipThreadResponse) => {
-                if (error) {
-                    reject(error);
-                } else {
-                    resolve(response);
-                }
-            })
-        }));
-    }
-
-    newDocument(options: NewDocumentOptions, callback: (error: QuipAPIClientError, response: QuipThreadResponse) => void): void {
+    async newDocument(options: NewDocumentOptions): Promise<QuipThreadResponse> {
         var args = {
             'content': options.content,
             'title': options.title,
             'format': options.format
         };
-        this.call_('threads/new-document', callback, args);
+        return this.fetchAPI('/1/threads/new-document', args);
     }
 
-    call_(path: string,
-        callback: (error: Error, response: object) => void,
-        postArguments: any): void {
-        var requestOptions: RequestOptions = {
-            hostname: this.hostname, // one line justifies overriding this damn method
-            port: 443,
-            path: '/1/' + path,
-            headers: {},
-            method: RequestMethod.GET
+    buildRequest(path: string, postArguments: any): Request {
+        const url = `https://${this.hostname}${path}`;
+        var options: FetchRequestOptions = {
+            headers: new Headers()
         };
         if (this.accessToken) {
-            requestOptions.headers['Authorization'] = 'Bearer ' + this.accessToken;
+            options.headers.append('Authorization', `Bearer ${this.accessToken}`);
         }
-        var requestBody = null;
         if (postArguments) {
-            for (var name in postArguments) {
-                if (!postArguments[name]) {
-                    delete postArguments[name];
-                }
-            }
-            requestOptions.method = RequestMethod.POST;
-            requestBody = querystring.stringify(postArguments);
-            requestOptions.headers['Content-Type'] =
-                'application/x-www-form-urlencoded';
-            requestOptions.headers['Content-Length'] =
-                Buffer.byteLength(requestBody);
+            options.body = new URLSearchParams(postArguments);
         }
-        var request = https.request(requestOptions, function (response: any) {
-            var data: string[] = [];
-            response.on('data', function (chunk: string) {
-                data.push(chunk);
-            });
-            response.on('end', function () {
-                var responseObject = null;
-                try {
-                    responseObject = /** @type {Object} */(
-                        JSON.parse(data.join('')));
-                } catch (err) {
-                    callback(err, null);
-                    return;
-                }
-                if (response.statusCode != 200) {
-                    callback(new QuipAPIClientError(response, responseObject), null);
-                } else {
-                    callback(null, responseObject);
-                }
-            });
-        });
-        request.on('error', function (error: Error) {
-            callback(error, null);
-        });
-        if (requestBody) {
-            request.write(requestBody);
-        }
-        request.end();
-
+        return new Request(url, options);
     }
-    
+
+    async fetchAPI(path: string,
+        postArguments: any): Promise<any> {
+        const resource = this.buildRequest(path, postArguments);
+        const response = await fetch(resource);
+        if (response.ok) {
+            return response.json();
+        } else {
+            throw new QuipAPIClientError(response, response.json());
+        }
+    }
 }
