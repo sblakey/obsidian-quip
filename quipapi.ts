@@ -44,7 +44,10 @@ interface NewDocumentOptions {
 }
 
 interface QuipThreadInfo {
+    id: string;
+    title: string;
 	link: string;
+    updated_usec: number;
 }
 
 export interface QuipThreadResponse {
