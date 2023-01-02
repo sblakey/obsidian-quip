@@ -9,12 +9,12 @@ interface FetchRequestOptions {
     method?: RequestMethod;
 }
 
-export class QuipAPIClientError extends Error {
+export class QuipAPIClientError<Type> extends Error {
     name: string;
     response: Response;
-    info: QuipResponse;
+    info: Type;
 
-    constructor(response: Response, info: QuipResponse) {
+    constructor(response: Response, info: Type) {
         super("Error invoking Quip API");
         this.name = "QuipAPIClientError";
         this.response = response;
@@ -28,10 +28,7 @@ enum DocumentFormat {
 	MARKDOWN = "markdown"
 }
 
-interface QuipArguments extends Record<string, string> {
-}
-
-interface NewDocumentArguments extends QuipArguments {
+interface NewDocumentArguments extends Record<string, string> {
 	content: string;
 	title?: string;
 	format: DocumentFormat;
@@ -44,10 +41,7 @@ interface QuipThreadInfo {
     updated_usec: number;
 }
 
-interface QuipResponse {
-}
-
-export interface QuipThreadResponse extends QuipResponse {
+export interface QuipThreadResponse {
 	thread: QuipThreadInfo;
 }
 
@@ -71,15 +65,15 @@ export class QuipAPIClient {
     }
 
     async newDocument(options: NewDocumentArguments): Promise<QuipThreadResponse> {
-        const args = {
+        const args: NewDocumentArguments = {
             'content': options.content,
             'title': options.title,
             'format': options.format
         };
-        return this.fetchAPI<QuipThreadResponse>('/1/threads/new-document', args);
+        return this.fetchAPI<NewDocumentArguments, QuipThreadResponse>('/1/threads/new-document', args);
     }
 
-    buildRequest(path: string, postArguments: QuipArguments): Request {
+    buildRequest<ArgType extends Record<string, string>>(path: string, postArguments: ArgType): Request {
         const url = `https://${this.hostname}${path}`;
         const options: FetchRequestOptions = {
             headers: new Headers()
@@ -94,8 +88,8 @@ export class QuipAPIClient {
         return new Request(url, options);
     }
 
-    async fetchAPI<T extends QuipResponse>(path: string,
-        postArguments: QuipArguments): Promise<T> {
+    async fetchAPI<ArgType extends Record<string, string>, ResponseType>(path: string,
+            postArguments: ArgType): Promise<ResponseType>{
         const resource = this.buildRequest(path, postArguments);
         const response = await fetch(resource);
         if (response.ok) {
