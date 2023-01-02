@@ -3,26 +3,18 @@ enum RequestMethod {
     POST = "POST"
 }
 
-interface RequestOptions {
-    hostname: string;
-    port: number;
-    path: string;
-    headers: {[index: string]:any};
-    method: RequestMethod;
-    body?: string;
-}
-
 interface FetchRequestOptions {
     headers: Headers;
     body?: URLSearchParams;
+    method?: RequestMethod;
 }
 
 export class QuipAPIClientError extends Error {
     name: string;
-    response: any;
-    info: any;
+    response: Response;
+    info: QuipResponse;
 
-    constructor(response: any, info: any) {
+    constructor(response: Response, info: QuipResponse) {
         super("Error invoking Quip API");
         this.name = "QuipAPIClientError";
         this.response = response;
@@ -36,11 +28,13 @@ enum DocumentFormat {
 	MARKDOWN = "markdown"
 }
 
-interface NewDocumentOptions {
+interface QuipArguments extends Record<string, string> {
+}
+
+interface NewDocumentArguments extends QuipArguments {
 	content: string;
-	title: string | undefined;
+	title?: string;
 	format: DocumentFormat;
-	memberIds: string[] | undefined;
 }
 
 interface QuipThreadInfo {
@@ -50,7 +44,10 @@ interface QuipThreadInfo {
     updated_usec: number;
 }
 
-export interface QuipThreadResponse {
+interface QuipResponse {
+}
+
+export interface QuipThreadResponse extends QuipResponse {
 	thread: QuipThreadInfo;
 }
 
@@ -64,7 +61,7 @@ export class QuipAPIClient {
     }
 
     async newHTMLDocument(html: string): Promise<QuipThreadResponse> {
-        const options: NewDocumentOptions = {
+        const options: NewDocumentArguments = {
             content: html,
             title: undefined,
             format: DocumentFormat.HTML,
@@ -73,31 +70,32 @@ export class QuipAPIClient {
         return this.newDocument(options);
     }
 
-    async newDocument(options: NewDocumentOptions): Promise<QuipThreadResponse> {
-        var args = {
+    async newDocument(options: NewDocumentArguments): Promise<QuipThreadResponse> {
+        const args = {
             'content': options.content,
             'title': options.title,
             'format': options.format
         };
-        return this.fetchAPI('/1/threads/new-document', args);
+        return this.fetchAPI<QuipThreadResponse>('/1/threads/new-document', args);
     }
 
-    buildRequest(path: string, postArguments: any): Request {
+    buildRequest(path: string, postArguments: QuipArguments): Request {
         const url = `https://${this.hostname}${path}`;
-        var options: FetchRequestOptions = {
+        const options: FetchRequestOptions = {
             headers: new Headers()
         };
         if (this.accessToken) {
             options.headers.append('Authorization', `Bearer ${this.accessToken}`);
         }
         if (postArguments) {
+            options.method = RequestMethod.POST;
             options.body = new URLSearchParams(postArguments);
         }
         return new Request(url, options);
     }
 
-    async fetchAPI(path: string,
-        postArguments: any): Promise<any> {
+    async fetchAPI<T extends QuipResponse>(path: string,
+        postArguments: QuipArguments): Promise<T> {
         const resource = this.buildRequest(path, postArguments);
         const response = await fetch(resource);
         if (response.ok) {
