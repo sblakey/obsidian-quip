@@ -1,3 +1,5 @@
+import {requestUrl, RequestUrlParam} from 'obsidian';
+
 enum RequestMethod {
     GET = "GET",
     POST = "POST"
@@ -70,32 +72,29 @@ export class QuipAPIClient {
             'title': options.title,
             'format': options.format
         };
-        return this.fetchAPI<NewDocumentArguments, QuipThreadResponse>('/1/threads/new-document', args);
+        return this.api<NewDocumentArguments, QuipThreadResponse>('/1/threads/new-document', args);
     }
 
-    buildRequest<ArgType extends Record<string, string>>(path: string, postArguments: ArgType): Request {
-        const url = `https://${this.hostname}${path}`;
-        const options: FetchRequestOptions = {
-            headers: new Headers()
+    buildRequest<ArgType extends Record<string, string>>(path: string, postArguments: ArgType): RequestUrlParam {
+        const options: RequestUrlParam = {
+            url: `https://${this.hostname}${path}`,
+            headers: {}
         };
         if (this.accessToken) {
-            options.headers.append('Authorization', `Bearer ${this.accessToken}`);
+            options.headers['Authorization'] = `Bearer ${this.accessToken}`;
         }
         if (postArguments) {
             options.method = RequestMethod.POST;
-            options.body = new URLSearchParams(postArguments);
+            options.body = new URLSearchParams(postArguments).toString();
+            options.contentType = 'application/x-www-form-urlencoded';
         }
-        return new Request(url, options);
+        return options;
     }
 
-    async fetchAPI<ArgType extends Record<string, string>, ResponseType>(path: string,
+    async api<ArgType extends Record<string, string>, ResponseType>(path: string,
             postArguments: ArgType): Promise<ResponseType>{
         const resource = this.buildRequest(path, postArguments);
-        const response = await fetch(resource);
-        if (response.ok) {
-            return response.json();
-        } else {
-            throw new QuipAPIClientError(response, response.json());
-        }
+        const response = requestUrl(resource);
+        return response.json;
     }
 }
