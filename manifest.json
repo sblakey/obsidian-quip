@@ -1,7 +1,7 @@
 {
 	"id": "obsidian-quip",
 	"name": "Quip",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"minAppVersion": "0.15.0",
 	"description": "This plugin provides commands to publish Markdown documents to Quip.com",
 	"author": "Sean Blakey",
