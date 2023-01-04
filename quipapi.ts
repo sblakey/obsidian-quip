@@ -5,12 +5,6 @@ enum RequestMethod {
     POST = "POST"
 }
 
-interface FetchRequestOptions {
-    headers: Headers;
-    body?: URLSearchParams;
-    method?: RequestMethod;
-}
-
 export class QuipAPIClientError<Type> extends Error {
     name: string;
     response: Response;

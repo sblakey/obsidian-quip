@@ -1,4 +1,4 @@
-import { App, Editor, MarkdownFileInfo, MarkdownView, Modal, Notice, Plugin, TFile } from 'obsidian';
+import { App, Editor, MarkdownFileInfo, MarkdownView, Modal, Notice, Plugin } from 'obsidian';
 import { QuipAPIClient } from './quipapi';
 import render from './renderer';
 import { DEFAULT_SETTINGS, QuipPluginSettings, QuipSettingTab } from './settings';
@@ -42,7 +42,7 @@ export default class QuipPlugin extends Plugin {
 	}
 
 	async publishHTML(markdownView: MarkdownView) {
-		let client = new QuipAPIClient(this.settings.hostname, this.settings.token);
+		const client = new QuipAPIClient(this.settings.hostname, this.settings.token);
 		// Quip import likes to replace the first heading with the document title
 		const html = await render(this, markdownView, markdownView.file);
 		console.log(html);
@@ -52,7 +52,7 @@ export default class QuipPlugin extends Plugin {
 			this.onSuccessfulPublish(response.thread.link);
 		} catch (error) {
 			console.log(error);
-			let text = JSON.stringify(error.info);
+			const text = JSON.stringify(error.info);
 			new Notice(text);
 		}
 	}
