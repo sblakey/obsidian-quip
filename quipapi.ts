@@ -59,20 +59,13 @@ export class QuipAPIClient {
     async newHTMLDocument(html: string): Promise<QuipThreadResponse> {
         const options: NewDocumentArguments = {
             content: html,
-            title: undefined,
             format: DocumentFormat.HTML,
-            memberIds: undefined
         };
         return this.newDocument(options);
     }
 
     async newDocument(options: NewDocumentArguments): Promise<QuipThreadResponse> {
-        const args: NewDocumentArguments = {
-            'content': options.content,
-            'title': options.title,
-            'format': options.format
-        };
-        return this.api<NewDocumentArguments, QuipThreadResponse>('/1/threads/new-document', args);
+        return this.api<NewDocumentArguments, QuipThreadResponse>('/1/threads/new-document', options);
     }
 
     buildRequest<ArgType extends Record<string, string>>(path: string, postArguments: ArgType): RequestUrlParam {
