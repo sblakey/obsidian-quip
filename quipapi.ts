@@ -30,6 +30,11 @@ interface NewDocumentArguments extends Record<string, string> {
 	format: DocumentFormat;
 }
 
+interface GetThreadHTMLOptions extends Record<string, string> {
+    threadIdOrSecretPath: string;
+    cursor?: string
+}
+
 interface QuipThreadInfo {
     id: string;
     title: string;
@@ -39,6 +44,11 @@ interface QuipThreadInfo {
 
 export interface QuipThreadResponse {
 	thread: QuipThreadInfo;
+}
+
+export interface QuipThreadHTMLResponse {
+    html: string;
+    response_metadata: Record<string, string>;
 }
 
 export class QuipAPIClient {
@@ -56,6 +66,28 @@ export class QuipAPIClient {
             format: DocumentFormat.HTML,
         };
         return this.newDocument(options);
+    }
+
+    async getDocumentHTML(threadIdOrSecretPath: string): Promise<string> {
+        let result = "";
+        let options: GetThreadHTMLOptions = {
+            threadIdOrSecretPath: threadIdOrSecretPath
+        };
+        do {
+            const response = await this.getThreadHTML(options);
+            result += response.html;
+            options.cursor = response.response_metadata?.next_cursor;
+        } while (options.cursor);
+        return result;
+    }
+
+    async getThreadHTML(options: GetThreadHTMLOptions): Promise<QuipThreadHTMLResponse> {
+
+        let url = `/2/threads/${options.threadIdOrSecretPath}/html`
+        if (options.cursor) {
+            url += `?cursor=${options.cursor}`;
+        }
+        return this.api<Record<string, string>, QuipThreadHTMLResponse>(url, null);
     }
 
     async newDocument(options: NewDocumentArguments): Promise<QuipThreadResponse> {
