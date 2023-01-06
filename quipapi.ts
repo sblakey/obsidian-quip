@@ -1,4 +1,4 @@
-import {requestUrl, RequestUrlParam} from 'obsidian';
+import {requestUrl, RequestUrlParam, sanitizeHTMLToDom} from 'obsidian';
 
 enum RequestMethod {
     GET = "GET",
@@ -24,13 +24,34 @@ enum DocumentFormat {
 	MARKDOWN = "markdown"
 }
 
+enum Location {
+    APPEND = "0",
+    PREPEND = "1",
+    AFTER_SECTION = "2",
+    BEFORE_SECTION = "3",
+    REPLACE_SECTION = "4",
+    DELETE_SECTION = "5",
+    AFTER_DOCUMENT_RANGE = "6",
+    BEFORE_DOCUMENT_RANGE = "7",
+    REPLACE_DOCUMENT_RANGE = "8",
+    DELETE_DOCUMENT_RANGE = "9"
+}
+
+interface EditDocumentArguments extends Record<string, string> {
+    thread_id: string;
+    content?: string;
+    section_id?: string;
+    document_range?: string;
+    location?: Location;
+}
+
 interface NewDocumentArguments extends Record<string, string> {
 	content: string;
 	title?: string;
 	format: DocumentFormat;
 }
 
-interface GetThreadHTMLOptions extends Record<string, string> {
+interface GetThreadHTMLArguments extends Record<string, string> {
     threadIdOrSecretPath: string;
     cursor?: string
 }
@@ -70,7 +91,7 @@ export class QuipAPIClient {
 
     async getDocumentHTML(threadIdOrSecretPath: string): Promise<string> {
         let result = "";
-        const options: GetThreadHTMLOptions = {
+        const options: GetThreadHTMLArguments = {
             threadIdOrSecretPath: threadIdOrSecretPath
         };
         do {
@@ -81,13 +102,47 @@ export class QuipAPIClient {
         return result;
     }
 
-    async getThreadHTML(options: GetThreadHTMLOptions): Promise<QuipThreadHTMLResponse> {
+    async updateHTMLDocument(link: string, html: string): Promise<QuipThreadResponse> {
+        const secret_path = link.split('.com/', 2).at(1).split('/').at(0);
+        console.log("Secret path", secret_path);
+        const current_html = await this.getDocumentHTML(secret_path);
+        const dom = sanitizeHTMLToDom(current_html);
+        console.log("Fragment from Quip", dom);
+        for (let level = 1; level <= 6; level++ ) {
+            const section_headers = dom.querySelectorAll(`h${level}`);
+            if (section_headers.length > 0) {
+                const promises = Array.from(section_headers).map( (section_header) => {
+                    const options: EditDocumentArguments = {
+                        thread_id: secret_path,
+                        location: Location.DELETE_DOCUMENT_RANGE,
+                        document_range: section_header.getText()
+                    };
+                    console.log("Deleting section", section_header);
+                    return this.editDocument(options);
+                });
+                await Promise.all(promises);
+                break;
+            }
+        }
+        const options: EditDocumentArguments = {
+            thread_id: secret_path,
+            location: Location.APPEND,
+            content: html
+        };
+        return this.editDocument(options);
+    }
+
+    async getThreadHTML(options: GetThreadHTMLArguments): Promise<QuipThreadHTMLResponse> {
 
         let url = `/2/threads/${options.threadIdOrSecretPath}/html`
         if (options.cursor) {
             url += `?cursor=${options.cursor}`;
         }
         return this.api<Record<string, string>, QuipThreadHTMLResponse>(url, null);
+    }
+
+    async editDocument(options: EditDocumentArguments): Promise<QuipThreadResponse> {
+        return this.api<EditDocumentArguments, QuipThreadResponse>('/1/threads/edit-document', options);
     }
 
     async newDocument(options: NewDocumentArguments): Promise<QuipThreadResponse> {

@@ -17,7 +17,6 @@ export default class QuipPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 
-
 		this.addCommand({
 			id: 'quip-publish-html',
 			name: 'Publish as new Quip document',
@@ -37,6 +36,28 @@ export default class QuipPlugin extends Plugin {
 			}
 		});
 
+		this.addCommand({
+			id: 'quip-update-html',
+			name: 'Replace existing Quip document',
+			checkCallback: (checking: boolean) => {
+				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
+				// Conditions to check
+				if (markdownView) {
+					// If checking is true, we're simply "checking" if the command can be run.
+					// If checking is false, then we want to actually perform the operation.
+					const link = this.app.metadataCache.getFileCache(markdownView.file).frontmatter?.quip;
+					if (link) {
+						if (!checking && link) {
+							this.updateHTML(link, markdownView);
+						}
+
+						// This command will only show up in Command Palette when the check function returns true
+						return true;
+					}
+				}
+			}
+		});
+
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new QuipSettingTab(this.app, this));
 	}
@@ -49,6 +70,22 @@ export default class QuipPlugin extends Plugin {
 		new Notice(`Publishing to ${this.settings.hostname}...`)
 		try {
 			const response = await client.newHTMLDocument(html);
+			this.onSuccessfulPublish(response.thread.link);
+		} catch (error) {
+			console.log(error);
+			const text = JSON.stringify(error.info);
+			new Notice(text);
+		}
+	}
+
+	async updateHTML(link: string, markdownView: MarkdownView) {
+		const client = new QuipAPIClient(this.settings.hostname, this.settings.token);
+		// Quip import likes to replace the first heading with the document title
+		const html = await render(this, markdownView, markdownView.file);
+		console.log(html);
+		new Notice(`Publishing to ${this.settings.hostname}...`)
+		try {
+			const response = await client.updateHTMLDocument(link, html);
 			this.onSuccessfulPublish(response.thread.link);
 		} catch (error) {
 			console.log(error);
