@@ -102,16 +102,17 @@ export class QuipAPIClient {
         return result;
     }
 
-    async updateHTMLDocument(link: string, html: string): Promise<QuipThreadResponse> {
+    async updateHTMLDocument(link: string, html: string): Promise<QuipThreadResponse[]> {
         const secret_path = link.split('.com/', 2).at(1).split('/').at(0);
         console.log("Secret path", secret_path);
         const current_html = await this.getDocumentHTML(secret_path);
         const dom = sanitizeHTMLToDom(current_html);
         console.log("Fragment from Quip", dom);
+        let promises: Promise<QuipThreadResponse>[] = [];
         for (let level = 1; level <= 6; level++ ) {
             const section_headers = dom.querySelectorAll(`h${level}`);
             if (section_headers.length > 0) {
-                const promises = Array.from(section_headers).map( (section_header) => {
+                promises = Array.from(section_headers).map( (section_header) => {
                     const options: EditDocumentArguments = {
                         thread_id: secret_path,
                         location: Location.DELETE_DOCUMENT_RANGE,
@@ -120,7 +121,6 @@ export class QuipAPIClient {
                     console.log("Deleting section", section_header);
                     return this.editDocument(options);
                 });
-                await Promise.all(promises);
                 break;
             }
         }
@@ -129,7 +129,8 @@ export class QuipAPIClient {
             location: Location.APPEND,
             content: html
         };
-        return this.editDocument(options);
+        promises.push(this.editDocument(options));
+        return Promise.all(promises);
     }
 
     async getThreadHTML(options: GetThreadHTMLArguments): Promise<QuipThreadHTMLResponse> {

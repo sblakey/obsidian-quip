@@ -38,7 +38,7 @@ export default class QuipPlugin extends Plugin {
 
 		this.addCommand({
 			id: 'quip-update-html',
-			name: 'Replace existing Quip document',
+			name: 'Update existing Quip document',
 			checkCallback: (checking: boolean) => {
 				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
 				// Conditions to check
@@ -85,8 +85,8 @@ export default class QuipPlugin extends Plugin {
 		console.log(html);
 		new Notice(`Publishing to ${this.settings.hostname}...`)
 		try {
-			const response = await client.updateHTMLDocument(link, html);
-			this.onSuccessfulPublish(response.thread.link);
+			await client.updateHTMLDocument(link, html);
+			new SuccessModal(this.app, link).open();
 		} catch (error) {
 			console.log(error);
 			const text = JSON.stringify(error.info);
@@ -97,7 +97,6 @@ export default class QuipPlugin extends Plugin {
 	onSuccessfulPublish(link: string): void {
 		console.log("Settings", this.settings);
 		if (this.settings.addLink) {
-			new Notice("Adding link to front matter");
 			const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
 			this.app.fileManager.processFrontMatter(markdownView.file,
 				(frontMatter: QuipFrontMatter) => {
@@ -105,7 +104,6 @@ export default class QuipPlugin extends Plugin {
 				})
 		}
 		new SuccessModal(this.app, link).open();
-
 	}
 
 	onunload() {
