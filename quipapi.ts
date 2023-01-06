@@ -70,7 +70,7 @@ export class QuipAPIClient {
 
     async getDocumentHTML(threadIdOrSecretPath: string): Promise<string> {
         let result = "";
-        let options: GetThreadHTMLOptions = {
+        const options: GetThreadHTMLOptions = {
             threadIdOrSecretPath: threadIdOrSecretPath
         };
         do {

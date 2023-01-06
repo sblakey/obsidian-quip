@@ -1,4 +1,4 @@
-import { App, Editor, MarkdownFileInfo, MarkdownView, Modal, Notice, Plugin } from 'obsidian';
+import { App, MarkdownView, Modal, Notice, Plugin } from 'obsidian';
 import { QuipAPIClient } from './quipapi';
 import render from './renderer';
 import { DEFAULT_SETTINGS, QuipPluginSettings, QuipSettingTab } from './settings';
@@ -21,10 +21,10 @@ export default class QuipPlugin extends Plugin {
 		this.addCommand({
 			id: 'quip-publish-html',
 			name: 'Publish as new Quip document',
-			editorCheckCallback: (checking: boolean, editor: Editor, ctx: MarkdownView | MarkdownFileInfo) => {
+			checkCallback: (checking: boolean) => {
+				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
 				// Conditions to check
-				if (ctx instanceof MarkdownView) {
-					const markdownView = ctx;
+				if (markdownView) {
 					// If checking is true, we're simply "checking" if the command can be run.
 					// If checking is false, then we want to actually perform the operation.
 					if (!checking) {
