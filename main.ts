@@ -88,7 +88,10 @@ export default class QuipPlugin extends Plugin {
 			await client.updateHTMLDocument(link, html);
 			new SuccessModal(this.app, link).open();
 		} catch (error) {
-			console.log(error);
+			console.error("Failure invoking Quip APIs", error);
+			for (const key of Object.keys(error)) {
+				console.log("key", error[key]);
+			}
 			const text = JSON.stringify(error.info);
 			new Notice(text);
 		}

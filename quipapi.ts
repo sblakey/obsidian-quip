@@ -108,28 +108,28 @@ export class QuipAPIClient {
         const current_html = await this.getDocumentHTML(secret_path);
         const dom = sanitizeHTMLToDom(current_html);
         console.log("Fragment from Quip", dom);
-        let promises: Promise<QuipThreadResponse>[] = [];
+        const promises: Promise<QuipThreadResponse>[] = [];
+        // find and remove elements before the first header
+        for (const elem of Array.from(dom.children)) {
+            if (isHeader(elem.tagName)) {
+                break;
+            } else if (elem.id) {
+                promises.push(this.deleteSection(secret_path, elem.id));
+            }
+        }
+        // find and remore the highest level headers
+        // this removes all content "under" those headers,
+        // according to a logical document outline that is unrelated to DOM
         for (let level = 1; level <= 6; level++ ) {
             const section_headers = dom.querySelectorAll(`h${level}`);
             if (section_headers.length > 0) {
-                promises = Array.from(section_headers).map( (section_header) => {
-                    const options: EditDocumentArguments = {
-                        thread_id: secret_path,
-                        location: Location.DELETE_DOCUMENT_RANGE,
-                        document_range: section_header.getText()
-                    };
-                    console.log("Deleting section", section_header);
-                    return this.editDocument(options);
-                });
+                for (const section_header of Array.from(section_headers)) {
+                    promises.push(this.deleteDocumentRange(secret_path, section_header.getText()));
+                }
                 break;
             }
         }
-        const options: EditDocumentArguments = {
-            thread_id: secret_path,
-            location: Location.APPEND,
-            content: html
-        };
-        promises.push(this.editDocument(options));
+        promises.push(this.appendHTML(secret_path, html));
         return Promise.all(promises);
     }
 
@@ -140,6 +140,35 @@ export class QuipAPIClient {
             url += `?cursor=${options.cursor}`;
         }
         return this.api<Record<string, string>, QuipThreadHTMLResponse>(url, null);
+    }
+
+    async appendHTML(secret_path: string, html: string) : Promise<QuipThreadResponse> {
+        const options: EditDocumentArguments = {
+            thread_id: secret_path,
+            location: Location.APPEND,
+            content: html
+        };
+        return this.editDocument(options);
+    }
+
+    async deleteDocumentRange(secret_path: string, document_range: string): Promise<QuipThreadResponse> {
+        const options: EditDocumentArguments = {
+            thread_id: secret_path,
+            location: Location.DELETE_DOCUMENT_RANGE,
+            document_range: document_range
+        };
+        console.log("Deleting under header", document_range);
+        return this.editDocument(options);
+    }
+
+    async deleteSection(secret_path: string, section_id: string): Promise<QuipThreadResponse> {
+        const options: EditDocumentArguments = {
+            thread_id: secret_path,
+            location: Location.DELETE_SECTION,
+            section_id: section_id
+        };
+        console.log("Deleting section", section_id);
+        return this.editDocument(options);
     }
 
     async editDocument(options: EditDocumentArguments): Promise<QuipThreadResponse> {
@@ -171,5 +200,20 @@ export class QuipAPIClient {
         const resource = this.buildRequest(path, postArguments);
         const response = requestUrl(resource);
         return response.json;
+    }
+}
+
+function isHeader(tag_name: string): boolean {
+    console.log(tag_name);
+    switch(tag_name) {
+        case 'H1':
+        case 'H2':
+        case 'H3':
+        case 'H4':
+        case 'H5':
+        case 'H6':
+            return true;
+        default:
+            return false;
     }
 }
