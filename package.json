@@ -1,7 +1,7 @@
 {
-	"name": "obsidian-sample-plugin",
-	"version": "1.0.0",
-	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+	"name": "quip",
+	"version": "1.0.3",
+	"description": "Obsidian plugin to enable publishing to Quip",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
