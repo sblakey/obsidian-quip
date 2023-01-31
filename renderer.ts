@@ -105,7 +105,7 @@ export default async function render (plugin: QuipPlugin, view: MarkdownView,
 
     // If it's a top level note, make the HTML a standalone document - inject CSS, a <title>, etc.
     if (parentFiles.length === 0) {
-        html = await standaloneHTML(html);
+        //html = await standaloneHTML(html);
     }
 
     return html;
