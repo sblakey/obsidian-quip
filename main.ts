@@ -66,13 +66,12 @@ export default class QuipPlugin extends Plugin {
 		const client = new QuipAPIClient(this.settings.hostname, this.settings.token);
 		// Quip import likes to replace the first heading with the document title
 		const html = await render(this, markdownView, markdownView.file);
-		console.log(html);
 		new Notice(`Publishing to ${this.settings.hostname}...`)
 		try {
 			const response = await client.newHTMLDocument(html);
 			this.onSuccessfulPublish(response.thread.link);
 		} catch (error) {
-			console.log(error);
+			console.error(error);
 			const text = JSON.stringify(error.info);
 			new Notice(text);
 		}
@@ -82,23 +81,18 @@ export default class QuipPlugin extends Plugin {
 		const client = new QuipAPIClient(this.settings.hostname, this.settings.token);
 		// Quip import likes to replace the first heading with the document title
 		const html = await render(this, markdownView, markdownView.file);
-		console.log(html);
 		new Notice(`Publishing to ${this.settings.hostname}...`)
 		try {
 			await client.updateHTMLDocument(link, html);
 			new SuccessModal(this.app, link).open();
 		} catch (error) {
 			console.error("Failure invoking Quip APIs", error);
-			for (const key of Object.keys(error)) {
-				console.log("key", error[key]);
-			}
 			const text = JSON.stringify(error.info);
 			new Notice(text);
 		}
 	}
 
 	onSuccessfulPublish(link: string): void {
-		console.log("Settings", this.settings);
 		if (this.settings.addLink) {
 			const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
 			this.app.fileManager.processFrontMatter(markdownView.file,

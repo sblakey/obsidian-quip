@@ -40,7 +40,6 @@ export class QuipSettingTab extends PluginSettingTab {
 			.addText(text => text
 				.setValue(this.plugin.settings.token)
 				.onChange(async (value) => {
-					console.log(`Token: ${value}`);
 					this.plugin.settings.token = value;
 					await this.plugin.saveSettings();
 				}));
@@ -51,7 +50,6 @@ export class QuipSettingTab extends PluginSettingTab {
 				.setPlaceholder('platform.quip.com')
 				.setValue(this.plugin.settings.hostname)
 				.onChange(async (value) => {
-					console.log(`Hostname: ${value}`);
 					this.plugin.settings.hostname = value;
 					await this.plugin.saveSettings();
 				}));
@@ -61,7 +59,6 @@ export class QuipSettingTab extends PluginSettingTab {
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.removeYAML)
 				.onChange(async (value) => {
-					console.log(`Remove YAML: ${value}`);
 					this.plugin.settings.removeYAML = value;
 					await this.plugin.saveSettings();
 				}));
@@ -71,7 +68,6 @@ export class QuipSettingTab extends PluginSettingTab {
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.addLink)
 				.onChange(async (value) => {
-					console.log(`Add Link: ${value}`);
 					this.plugin.settings.addLink = value;
 					await this.plugin.saveSettings();
 				}));
@@ -81,7 +77,6 @@ export class QuipSettingTab extends PluginSettingTab {
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.inlineEmbeds)
 				.onChange(async (value) => {
-					console.log(`Add Link: ${value}`);
 					this.plugin.settings.inlineEmbeds = value;
 					await this.plugin.saveSettings();
 				}));

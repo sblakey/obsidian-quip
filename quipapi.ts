@@ -108,15 +108,12 @@ export class QuipAPIClient {
 
     async updateHTMLDocument(link: string, html: string): Promise<QuipThreadResponse[]> {
         const secret_path = link.split('.com/', 2).at(1).split('/').at(0);
-        console.log("Secret path", secret_path);
         const marker = "DELETE" + Date.now();
         const prepend_html = `${html}
         <h1>${marker}</h1>
         <p><em>Delete after this marker</em</p>`;   
-        console.log("To prepend", prepend_html);
         const current_html = (await this.prependHTML(secret_path, prepend_html)).html;
         const dom = sanitizeHTMLToDom(current_html);
-        console.log("Fragment from Quip", dom);
         const promises: Promise<QuipThreadResponse>[] = [];
         // find and remore the highest level headers
         // this removes all content "under" those headers,
@@ -125,7 +122,6 @@ export class QuipAPIClient {
         const section_headers = dom.querySelectorAll('h1');
         for (const section_header of Array.from(section_headers)) {
             if (marker_found || section_header.getText() == marker) {
-                console.log("Found marker", marker);
                 marker_found = true;
                 promises.push(this.deleteDocumentRange(secret_path, section_header.getText()));
             }
@@ -166,7 +162,6 @@ export class QuipAPIClient {
             location: Location.DELETE_DOCUMENT_RANGE,
             document_range: document_range
         };
-        console.log("Deleting under header", document_range);
         return this.editDocument(options);
     }
 
@@ -176,7 +171,6 @@ export class QuipAPIClient {
             location: Location.DELETE_SECTION,
             section_id: section_id
         };
-        console.log("Deleting section", section_id);
         return this.editDocument(options);
     }
 
@@ -209,20 +203,5 @@ export class QuipAPIClient {
         const resource = this.buildRequest(path, postArguments);
         const response = requestUrl(resource);
         return response.json;
-    }
-}
-
-function isHeader(tag_name: string): boolean {
-    console.log(tag_name);
-    switch(tag_name) {
-        case 'H1':
-        case 'H2':
-        case 'H3':
-        case 'H4':
-        case 'H5':
-        case 'H6':
-            return true;
-        default:
-            return false;
     }
 }
