@@ -3,8 +3,6 @@ import { QuipAPIClient } from './quipapi';
 import render from './renderer';
 import { DEFAULT_SETTINGS, QuipPluginSettings, QuipSettingTab } from './settings';
 
-// Remember to rename these classes and interfaces!
-
 interface QuipFrontMatter {
 	quip: string;
 }
@@ -33,6 +31,7 @@ export default class QuipPlugin extends Plugin {
 					// This command will only show up in Command Palette when the check function returns true
 					return true;
 				}
+				return false;
 			}
 		});
 
@@ -55,6 +54,7 @@ export default class QuipPlugin extends Plugin {
 						return true;
 					}
 				}
+				return false;
 			}
 		});
 
