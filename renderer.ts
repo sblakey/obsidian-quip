@@ -3,7 +3,7 @@
 
 import QuipPlugin from './main';
 
-import { FileSystemAdapter, MarkdownRenderer, MarkdownView, TFile } from 'obsidian';
+import { MarkdownRenderer, MarkdownView, TFile, Vault } from 'obsidian';
 
 interface LookupTable {
     [index: string]: string
@@ -22,10 +22,10 @@ const mimeTypeTable : LookupTable = {
 }
 
 
-async function postProcessRenderedHTML(plugin: QuipPlugin, inputFile: string, wrapper: HTMLElement,
+async function postProcessRenderedHTML(plugin: QuipPlugin, inputFile: TFile, wrapper: HTMLElement,
     parentFiles: string[] = [])
 {
-    const adapter = plugin.app.vault.adapter as FileSystemAdapter;
+    const vault = plugin.app.vault as Vault;
     // Fix <span src="image.png">
     for (const span of Array.from(wrapper.querySelectorAll('span[src$=".png"], span[src$=".jpg"], span[src$=".gif"], span[src$=".jpeg"]'))) {
         const img = createEl('img', {
@@ -39,10 +39,10 @@ async function postProcessRenderedHTML(plugin: QuipPlugin, inputFile: string, wr
         for (const span of Array.from(wrapper.querySelectorAll('img.internal-embed'))) {
             const src = span.getAttribute('src');
             if (src) {
-                const subfolder = inputFile.substring(adapter.getBasePath().length);  // TODO: this is messy
-                const file = plugin.app.metadataCache.getFirstLinkpathDest(src, subfolder);
+                const subfolder = inputFile.parent;
+                const file = plugin.app.metadataCache.getFirstLinkpathDest(src, subfolder.path);
                 try {
-                    const bytes = await adapter.readBinary(file.path);
+                    const bytes = await vault.readBinary(file);
                     const type = mimeTypeTable[file.extension] ?? 'image/jpeg';
                     const encoded = Buffer.from(bytes).toString('base64');
                     span.setAttribute('src', `data:${type};base64,${encoded}`);
@@ -57,8 +57,8 @@ async function postProcessRenderedHTML(plugin: QuipPlugin, inputFile: string, wr
         for (const span of Array.from(wrapper.querySelectorAll('span.internal-embed'))) {
             const src = span.getAttribute('src');
             if (src) {
-                const subfolder = inputFile.substring(adapter.getBasePath().length);  // TODO: this is messy
-                const file = plugin.app.metadataCache.getFirstLinkpathDest(src, subfolder);
+                const subfolder = inputFile.parent;
+                const file = plugin.app.metadataCache.getFirstLinkpathDest(src, subfolder.path);
                 try {
                     if (parentFiles.indexOf(file.path) !== -1) {
                         // We've got an infinite recursion on our hands
@@ -66,9 +66,9 @@ async function postProcessRenderedHTML(plugin: QuipPlugin, inputFile: string, wr
                         // Then our link processing happens afterwards
                         span.outerHTML = `<a href="${file}">${span.innerHTML}</a>`;
                     } else {
-                        const markdown = await adapter.read(file.path);
+                        const markdown = await vault.read(file);
                         const newParentFiles = [...parentFiles];
-                        newParentFiles.push(inputFile);
+                        newParentFiles.push(inputFile.path);
                         // TODO: because of this cast, embedded notes won't be able to handle complex plugins (eg DataView)
                         const html = await render(plugin, { data: markdown } as MarkdownView, file, newParentFiles);
                         span.outerHTML = html;
@@ -101,7 +101,7 @@ export default async function render (plugin: QuipPlugin, view: MarkdownView,
     await MarkdownRenderer.renderMarkdown(markdown, wrapper, sourcePath, view);
 
     // Post-process the HTML in-place
-    await postProcessRenderedHTML(plugin, inputFile.path, wrapper,
+    await postProcessRenderedHTML(plugin, inputFile, wrapper,
         parentFiles);
     let html = wrapper.innerHTML;
     document.body.removeChild(wrapper);
