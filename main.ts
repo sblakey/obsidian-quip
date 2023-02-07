@@ -16,7 +16,7 @@ export default class QuipPlugin extends Plugin {
 		await this.loadSettings();
 
 		this.addCommand({
-			id: 'quip-publish-html',
+			id: 'publish-html',
 			name: 'Publish as new Quip document',
 			checkCallback: (checking: boolean) => {
 				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
@@ -36,7 +36,7 @@ export default class QuipPlugin extends Plugin {
 		});
 
 		this.addCommand({
-			id: 'quip-update-html',
+			id: 'update-html',
 			name: 'Update existing Quip document',
 			checkCallback: (checking: boolean) => {
 				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
