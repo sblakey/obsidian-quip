@@ -28,8 +28,11 @@ async function postProcessRenderedHTML(plugin: QuipPlugin, inputFile: string, wr
     const adapter = plugin.app.vault.adapter as FileSystemAdapter;
     // Fix <span src="image.png">
     for (const span of Array.from(wrapper.querySelectorAll('span[src$=".png"], span[src$=".jpg"], span[src$=".gif"], span[src$=".jpeg"]'))) {
-        span.innerHTML = '';
-        span.outerHTML = span.outerHTML.replace(/span/g, 'img');
+        const img = createEl('img', {
+            'attr': {'src': span.getAttr("src") },
+            'cls': span.className
+        });
+        span.replaceWith(img);
     }
     if (plugin.settings.inlineEmbeds) {
         // Fix <img class='internal-embed' src='file_in_vault'>
