@@ -118,7 +118,7 @@ export class QuipAPIClient {
         // find and remore the highest level headers
         // this removes all content "under" those headers,
         // according to a logical document outline that is unrelated to DOM
-        var marker_found = false;
+        let marker_found = false;
         const section_headers = dom.querySelectorAll('h1');
         for (const section_header of Array.from(section_headers)) {
             if (marker_found || section_header.getText() == marker) {
