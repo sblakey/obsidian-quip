@@ -44,7 +44,7 @@ export default class QuipPlugin extends Plugin {
 				if (markdownView) {
 					// If checking is true, we're simply "checking" if the command can be run.
 					// If checking is false, then we want to actually perform the operation.
-					const link = this.app.metadataCache.getFileCache(markdownView.file).frontmatter?.quip;
+					const link = this.app.metadataCache.getFileCache(this.app.workspace.getActiveFile()).frontmatter?.quip;
 					if (link) {
 						if (!checking && link) {
 							this.updateHTML(link, markdownView);
@@ -65,7 +65,7 @@ export default class QuipPlugin extends Plugin {
 	async publishHTML(markdownView: MarkdownView) {
 		const client = new QuipAPIClient(this.settings.hostname, this.settings.token);
 		// Quip import likes to replace the first heading with the document title
-		const html = await render(this, markdownView, markdownView.file);
+		const html = await render(this, markdownView, this.app.workspace.getActiveFile());
 		new Notice(`Publishing to ${this.settings.hostname}...`)
 		try {
 			const response = await client.newHTMLDocument(html);
@@ -80,7 +80,7 @@ export default class QuipPlugin extends Plugin {
 	async updateHTML(link: string, markdownView: MarkdownView) {
 		const client = new QuipAPIClient(this.settings.hostname, this.settings.token);
 		// Quip import likes to replace the first heading with the document title
-		const html = await render(this, markdownView, markdownView.file);
+		const html = await render(this, markdownView, this.app.workspace.getActiveFile());
 		new Notice(`Publishing to ${this.settings.hostname}...`)
 		try {
 			await client.updateHTMLDocument(link, html);
