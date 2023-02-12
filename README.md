@@ -2,13 +2,11 @@
 
 This is a simple plugin for Obsidian (https://obsidian.md) to talk with Quip (the lightweight document tool from Salesforce, not the toothbrush).
 
-This project uses Typescript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in Typescript Definition format, which contains TSDoc comments describing what it does.
-
 **Note:** The Obsidian API is still in early beta and is subject to change at any time!
 
-Currently, this plugin exposes one Command:
+Currently, this plugin exposes two Commands:
 - **Publish as new Quip document**, which uses Obsidican internals to create an HTML document for import to Quip.
+- **Update existing Quip document**, which overwrites the existing Quip document with a fresh rendering from Obsidian.
 
 For notes on how to work with this codebase, see [DEVELOPING.md](./DEVELOPING.md)
 
