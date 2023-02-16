@@ -58,8 +58,8 @@ Test table based on Obsdian's [How To Format Your Notes](https://help.obsidian.m
 | Math              | :x:                    |
 | Code              | :white_check_mark:     |
 | Highlighting      | :x:                    |
-| Comments          | :x:                    |
-| Callouts          | :white_check_mark:     |
+| Callouts          | :x:                    |
+| Comments          | :white_check_mark:     |
 | Embedded Canvas   | :x:                    |
 | Mermaid           | :x:                    |
 
