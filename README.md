@@ -59,7 +59,8 @@ Test table based on Obsdian's [How To Format Your Notes](https://help.obsidian.m
 | Code              | :white_check_mark:     |
 | Highlighting      | :x:                    |
 | Comments          | :x:                    |
-| Callouts          | :x:                    |
+| Callouts          | :white_check_mark:     |
+| Embedded Canvas   | :x:                    |
 | Mermaid           | :x:                    |
 
 ### Configurable processing
