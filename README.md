@@ -10,17 +10,6 @@ Currently, this plugin exposes two Commands:
 
 For notes on how to work with this codebase, see [DEVELOPING.md](./DEVELOPING.md)
 
-## Installing this plugin as a Beta Tester
-
-1. Install [BRAT](https://github.com/TfTHacker/obsidian42-brat) from the Community Plugins in Obsidian
-2. Copy the link https://github.com/sblakey/obsidian-quip
-3. Open the command palette and run the command **BRAT: Add a beta plugin for testing**
-4. Using the link from step 2, copy that into the modal that opens up
-5. Click on Add Plugin -- wait a few seconds and BRAT will tell you what is going on
-6. After BRAT confirms the installation, in Settings go to the **Community plugins ** tab.
-7. Refresh the list of plugins
-8. Find the beta plugin you just installed - "Obsidian Quip" - and Enable it.
-
 ## Linking to your Corporate Quip instance
 
 You will need to provide this plugin with two settings: the portal API endpoint and your developer key.
@@ -71,3 +60,20 @@ be disabled in Settings:
 1. [YAML front matter](https://help.obsidian.md/Advanced+topics/YAML+front+matter), if present, will be stripped out of content before publishing.
 2. [Embed Notes](https://help.obsidian.md/How+to/Embed+files), if present, will be recursively parsed as markdown and inlined.
 
+### YAML front matter attributes
+
+This plugin understands two possible attributes in your note's [YAML front matter](https://help.obsidian.md/Advanced+topics/YAML+front+matter):
+
+- `quip`: URL to the quip document published from this note. If present, this URL will be used for the **Update existing Quip document** command.
+- `title`: If present when the note is first published, will **override** the Note name as a document title in Quip. Note that you will also need to turn on the "Add Note name as Quip document title" setting to enable this feature, and that this plugin cannot **update** the titles of notes.
+
+## Installing this plugin as a Beta Tester
+
+1. Install [BRAT](https://github.com/TfTHacker/obsidian42-brat) from the Community Plugins in Obsidian
+2. Copy the link https://github.com/sblakey/obsidian-quip
+3. Open the command palette and run the command **BRAT: Add a beta plugin for testing**
+4. Using the link from step 2, copy that into the modal that opens up
+5. Click on Add Plugin -- wait a few seconds and BRAT will tell you what is going on
+6. After BRAT confirms the installation, in Settings go to the **Community plugins ** tab.
+7. Refresh the list of plugins
+8. Find the beta plugin you just installed - "Obsidian Quip" - and Enable it.
