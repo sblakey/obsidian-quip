@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting } from 'obsidian';
+import { App, PluginSettingTab, Setting, TextComponent } from 'obsidian';
 import QuipPlugin from './main';
 
 
@@ -8,6 +8,7 @@ export interface QuipPluginSettings {
 	removeYAML: boolean;
 	addLink: boolean;
 	inlineEmbeds: boolean;
+	prependTitle: boolean;
 }
 
 export const DEFAULT_SETTINGS: QuipPluginSettings = {
@@ -15,7 +16,8 @@ export const DEFAULT_SETTINGS: QuipPluginSettings = {
 	token: '',
 	removeYAML: true,
 	addLink: true,
-	inlineEmbeds: true
+	inlineEmbeds: true,
+	prependTitle: false,
 }
 
 
@@ -80,5 +82,17 @@ export class QuipSettingTab extends PluginSettingTab {
 					this.plugin.settings.inlineEmbeds = value;
 					await this.plugin.saveSettings();
 				}));
+		new Setting(containerEl)
+			.setName('Document title')
+			.setDesc('Add Note name as Quip Document title')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.prependTitle)
+				.onChange(async (value) => {
+					this.plugin.settings.prependTitle = value;
+					await this.plugin.saveSettings();
+				}));
+		containerEl.createEl('em', {
+			text: "Note that Quip does not expose any API to update a title of an existing document, so renaming a note will NOT change the document title in Quip."
+		});
 	}
 }

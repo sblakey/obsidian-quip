@@ -25,7 +25,12 @@ export default class QuipPlugin extends Plugin {
 					// If checking is true, we're simply "checking" if the command can be run.
 					// If checking is false, then we want to actually perform the operation.
 					if (!checking) {
-						this.publishHTML(markdownView);
+						var title = null;
+						if (this.settings.prependTitle) {
+							const file = this.app.workspace.getActiveFile();
+							title = this.app.metadataCache.getFileCache(file).frontmatter?.title || file.basename;
+						}
+						this.publishHTML(markdownView, title);
 					}
 
 					// This command will only show up in Command Palette when the check function returns true
@@ -62,13 +67,16 @@ export default class QuipPlugin extends Plugin {
 		this.addSettingTab(new QuipSettingTab(this.app, this));
 	}
 
-	async publishHTML(markdownView: MarkdownView) {
+	async publishHTML(markdownView: MarkdownView, title: string) {
 		const client = new QuipAPIClient(this.settings.hostname, this.settings.token);
 		// Quip import likes to replace the first heading with the document title
-		const html = await render(this, markdownView, this.app.workspace.getActiveFile());
+		var html = await render(this, markdownView, this.app.workspace.getActiveFile());
+		if (title) {
+			html = `<h1>${title}</h1>${html}`
+		}
 		new Notice(`Publishing to ${this.settings.hostname}...`)
 		try {
-			const response = await client.newHTMLDocument(html);
+			const response = await client.newHTMLDocument(html, title);
 			this.onSuccessfulPublish(response.thread.link);
 		} catch (error) {
 			console.error(error);
@@ -87,7 +95,8 @@ export default class QuipPlugin extends Plugin {
 			new SuccessModal(this.app, link).open();
 		} catch (error) {
 			console.error("Failure invoking Quip APIs", error);
-			const text = JSON.stringify(error.info);
+			console.dir(error);
+			const text = error.message || JSON.stringify(error.info);
 			new Notice(text);
 		}
 	}

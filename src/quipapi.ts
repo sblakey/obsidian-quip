@@ -85,11 +85,14 @@ export class QuipAPIClient {
         this.hostname = hostname;
     }
 
-    async newHTMLDocument(html: string): Promise<QuipThreadResponse> {
+    async newHTMLDocument(html: string, title: string): Promise<QuipThreadResponse> {
         const options: NewDocumentArguments = {
             content: html,
             format: DocumentFormat.HTML,
         };
+        if (title) {
+            options.title = title;
+        }
         return this.newDocument(options);
     }
 
@@ -185,7 +188,8 @@ export class QuipAPIClient {
     buildRequest<ArgType extends Record<string, string>>(path: string, postArguments: ArgType): RequestUrlParam {
         const options: RequestUrlParam = {
             url: `https://${this.hostname}${path}`,
-            headers: {}
+            headers: {},
+            throw: false
         };
         if (this.accessToken) {
             options.headers['Authorization'] = `Bearer ${this.accessToken}`;
@@ -202,6 +206,17 @@ export class QuipAPIClient {
             postArguments: ArgType): Promise<ResponseType>{
         const resource = this.buildRequest(path, postArguments);
         const response = requestUrl(resource);
+        const status = (await response).status;
+        if (status >= 400) {
+            switch (status) {
+                case 401:
+                    throw new Error('Quip authorization failed')
+                case 404:
+                    throw new Error('Document not found in Quip');
+                default:
+                    throw new Error(`Quip server error: ${status}: ${await response.text}`)
+            }
+        }
         return response.json;
     }
 }
