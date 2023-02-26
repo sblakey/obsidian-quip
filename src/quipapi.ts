@@ -181,6 +181,27 @@ export class QuipAPIClient {
         return this.api<EditDocumentArguments, QuipThreadEditResponse>('/1/threads/edit-document', options);
     }
 
+    async getBlob(path: string): Promise<Blob> {
+        const url = `/1${path}`;
+        const resource = this.buildRequest(url, null);
+        const response = await requestUrl(resource);
+        const status = response.status;
+        if (status >= 400) {
+            switch (status) {
+                case 401:
+                    throw new Error('Quip authorization failed')
+                case 404:
+                    throw new Error('Document not found in Quip');
+                default:
+                    throw new Error(`Quip server error: ${status}: ${response.text}`)
+            }
+        }
+        return new Blob([response.arrayBuffer], {
+            type: response.headers['Content-Type'] || 'image/png'
+        });
+        
+    }
+
     async getThread(thread_id_or_secret_path: string): Promise<QuipThreadResponse> {
         const url = `/2/threads/${thread_id_or_secret_path}`;
         return this.api<Record<string, string>, QuipThreadResponse>(url, null);

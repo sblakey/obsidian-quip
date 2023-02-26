@@ -1,4 +1,4 @@
-import { App, htmlToMarkdown, MarkdownView, Modal, Notice, Plugin, Setting, stringifyYaml } from 'obsidian';
+import { App, htmlToMarkdown, MarkdownView, Modal, Notice, Plugin, sanitizeHTMLToDom, Setting, stringifyYaml, Vault } from 'obsidian';
 import { QuipAPIClient } from './quipapi';
 import render from './renderer';
 import { DEFAULT_SETTINGS, QuipPluginSettings, QuipSettingTab } from './settings';
@@ -130,7 +130,22 @@ export default class QuipPlugin extends Plugin {
 		const client = new QuipAPIClient(this.settings.hostname, this.settings.token);
 		const html = await client.getDocumentHTML(secret_path);
 		const info = (await client.getThread(secret_path)).thread;
-		const markdown = td.turndown(html);
+		const fragment = sanitizeHTMLToDom(html);
+        for (const img of Array.from(fragment.querySelectorAll('img'))) {
+            const src = img.getAttribute('src');
+            if (src) {
+				const blob = await client.getBlob(src);
+				const type = blob.type;
+				let extension = type.split('image/', 2).at(1);
+				if (extension == 'svg+xml') {
+					extension = 'svg';
+				}
+				const filename = `${info.title.replaceAll(' ', '_')}${src.replaceAll('/', '-')}.${extension}`;
+				this.app.vault.createBinary(filename, await blob.arrayBuffer());
+				img.setAttribute('src', filename);
+			}
+		}
+		const markdown = td.turndown(fragment);
 		const front_matter = {
 			title: info.title,
 			quip: url,
