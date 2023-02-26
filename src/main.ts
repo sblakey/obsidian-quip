@@ -1,10 +1,14 @@
-import { App, htmlToMarkdown, MarkdownView, Modal, Notice, Plugin, Setting } from 'obsidian';
+import { App, htmlToMarkdown, MarkdownView, Modal, Notice, Plugin, Setting, stringifyYaml } from 'obsidian';
 import { QuipAPIClient } from './quipapi';
 import render from './renderer';
 import { DEFAULT_SETTINGS, QuipPluginSettings, QuipSettingTab } from './settings';
+import TurndownService from 'turndown';
+import { gfm } from 'turndown-plugin-gfm';
+
 
 interface QuipFrontMatter {
 	quip: string;
+	title?: string;
 }
 
 class ImportModal extends Modal {
@@ -115,14 +119,30 @@ export default class QuipPlugin extends Plugin {
 	}
 
 	async importHTML(url: string) {
+		const td = new TurndownService({
+			headingStyle: "atx",
+			hr: '***',
+			bulletListMarker: '-',
+			codeBlockStyle: 'fenced',
+		});
+		td.use(gfm);
         const secret_path = url.split('.com/', 2).at(1).split('/').at(0);
 		const client = new QuipAPIClient(this.settings.hostname, this.settings.token);
 		const html = await client.getDocumentHTML(secret_path);
 		const info = (await client.getThread(secret_path)).thread;
-		const markdown = htmlToMarkdown(html);
+		const markdown = td.turndown(html);
+		const front_matter = {
+			title: info.title,
+			quip: url,
+		};
 		const title = info.title;
 		const filename = `${title}.md`;
-		const file = await this.app.vault.create(filename, markdown);
+		//this.app.vault.create(`${title}.html`, html);
+		const file_content = `---
+${stringifyYaml(front_matter)}
+---
+${markdown}`;
+		const file = await this.app.vault.create(filename, file_content);
 		this.app.workspace.getLeaf('tab').openFile(file);
 	}
 
