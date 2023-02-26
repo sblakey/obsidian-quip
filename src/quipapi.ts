@@ -181,6 +181,11 @@ export class QuipAPIClient {
         return this.api<EditDocumentArguments, QuipThreadEditResponse>('/1/threads/edit-document', options);
     }
 
+    async getThread(thread_id_or_secret_path: string): Promise<QuipThreadResponse> {
+        const url = `/2/threads/${thread_id_or_secret_path}`;
+        return this.api<Record<string, string>, QuipThreadResponse>(url, null);
+    }
+
     async newDocument(options: NewDocumentArguments): Promise<QuipThreadResponse> {
         return this.api<NewDocumentArguments, QuipThreadResponse>('/1/threads/new-document', options);
     }

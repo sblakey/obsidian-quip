@@ -1,4 +1,4 @@
-import { App, MarkdownView, Modal, Notice, Plugin } from 'obsidian';
+import { App, htmlToMarkdown, MarkdownView, Modal, Notice, Plugin, Setting } from 'obsidian';
 import { QuipAPIClient } from './quipapi';
 import render from './renderer';
 import { DEFAULT_SETTINGS, QuipPluginSettings, QuipSettingTab } from './settings';
@@ -7,6 +7,42 @@ interface QuipFrontMatter {
 	quip: string;
 }
 
+class ImportModal extends Modal {
+	url: string;
+	onSubmit: (url: string) => void;
+
+	constructor(app: App, onSubmit: (result: string) => void) {
+		super(app);
+		this.onSubmit = onSubmit;
+	}
+
+	onOpen() {
+		const { contentEl } = this;
+		contentEl.createEl("h1", { text: 'Quip document to import' });
+		new Setting(contentEl)
+			.setName("URL")
+			.addText((text) =>
+				text.onChange((value) => {
+					this.url = value;
+				}));
+		new Setting(contentEl)
+			.addButton((btn) =>
+				btn
+					.setButtonText("Submit")
+					.setCta()
+					.onClick(() => {
+						this.close();
+						if (this.url) {
+							this.onSubmit(this.url);
+						}
+					}));
+	};
+
+	onClose() {
+		let { contentEl } = this;
+		contentEl.empty();
+	}
+}
 
 
 export default class QuipPlugin extends Plugin {
@@ -63,8 +99,31 @@ export default class QuipPlugin extends Plugin {
 			}
 		});
 
+		this.addCommand({
+			id: 'import',
+			name: 'Import Quip document',
+			callback: () => {
+				let url: string = null;
+				new ImportModal(this.app, (url) => {
+					this.importHTML(url);
+				}).open();
+			}
+		})
+
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new QuipSettingTab(this.app, this));
+	}
+
+	async importHTML(url: string) {
+        const secret_path = url.split('.com/', 2).at(1).split('/').at(0);
+		const client = new QuipAPIClient(this.settings.hostname, this.settings.token);
+		const html = await client.getDocumentHTML(secret_path);
+		const info = (await client.getThread(secret_path)).thread;
+		const markdown = htmlToMarkdown(html);
+		const title = info.title;
+		const filename = `${title}.md`;
+		const file = await this.app.vault.create(filename, markdown);
+		this.app.workspace.getLeaf('tab').openFile(file);
 	}
 
 	async publishHTML(markdownView: MarkdownView, title: string) {
