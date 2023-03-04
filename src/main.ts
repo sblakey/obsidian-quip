@@ -1,9 +1,10 @@
-import { App, htmlToMarkdown, MarkdownView, Modal, Notice, Plugin, sanitizeHTMLToDom, Setting, stringifyYaml, Vault } from 'obsidian';
+import { App, htmlToMarkdown, MarkdownView, Modal, normalizePath, Notice, Plugin, sanitizeHTMLToDom, Setting, stringifyYaml, TFile, Vault } from 'obsidian';
 import { QuipAPIClient } from './quipapi';
 import render from './renderer';
 import { DEFAULT_SETTINGS, QuipPluginSettings, QuipSettingTab } from './settings';
 import TurndownService from 'turndown';
 import { gfm } from 'turndown-plugin-gfm';
+import { ImportModal } from './ImportModal';
 
 
 interface QuipFrontMatter {
@@ -11,43 +12,11 @@ interface QuipFrontMatter {
 	title?: string;
 }
 
-class ImportModal extends Modal {
-	url: string;
-	onSubmit: (url: string) => void;
-
-	constructor(app: App, onSubmit: (result: string) => void) {
-		super(app);
-		this.onSubmit = onSubmit;
-	}
-
-	onOpen() {
-		const { contentEl } = this;
-		contentEl.createEl("h1", { text: 'Quip document to import' });
-		new Setting(contentEl)
-			.setName("URL")
-			.addText((text) =>
-				text.onChange((value) => {
-					this.url = value;
-				}));
-		new Setting(contentEl)
-			.addButton((btn) =>
-				btn
-					.setButtonText("Submit")
-					.setCta()
-					.onClick(() => {
-						this.close();
-						if (this.url) {
-							this.onSubmit(this.url);
-						}
-					}));
-	};
-
-	onClose() {
-		let { contentEl } = this;
-		contentEl.empty();
-	}
+export interface QuipThread {
+	link: string;
+	title?: string;
+	id?: string;
 }
-
 
 export default class QuipPlugin extends Plugin {
 	settings: QuipPluginSettings;
@@ -107,10 +76,13 @@ export default class QuipPlugin extends Plugin {
 			id: 'import',
 			name: 'Import Quip document',
 			callback: () => {
+				const client = new QuipAPIClient(this.settings.hostname, this.settings.token);
 				let url: string = null;
-				new ImportModal(this.app, (url) => {
+				const modal = new ImportModal(this.app, client, (url) => {
 					this.importHTML(url);
-				}).open();
+				});
+				modal.open();
+				(window as any).modal = modal;
 			}
 		})
 
@@ -118,6 +90,7 @@ export default class QuipPlugin extends Plugin {
 		this.addSettingTab(new QuipSettingTab(this.app, this));
 	}
 
+	// Import a Quip document into an Obsidian note
 	async importHTML(url: string) {
 		const td = new TurndownService({
 			headingStyle: "atx",
@@ -126,6 +99,11 @@ export default class QuipPlugin extends Plugin {
 			codeBlockStyle: 'fenced',
 		});
 		td.use(gfm);
+		const active_file = this.app.workspace.getActiveFile();
+		let parent = this.app.vault.getRoot();
+		if (active_file) {
+			parent = this.app.fileManager.getNewFileParent(active_file.path);
+		}
         const secret_path = url.split('.com/', 2).at(1).split('/').at(0);
 		const client = new QuipAPIClient(this.settings.hostname, this.settings.token);
 		const html = await client.getDocumentHTML(secret_path);
@@ -141,7 +119,13 @@ export default class QuipPlugin extends Plugin {
 					extension = 'svg';
 				}
 				const filename = `${info.title.replaceAll(' ', '_')}${src.replaceAll('/', '-')}.${extension}`;
-				this.app.vault.createBinary(filename, await blob.arrayBuffer());
+				const filepath = normalizePath(`${parent.path}/${filename}`);
+				const file = this.app.vault.getAbstractFileByPath(filepath);
+				if (file && file instanceof TFile) {
+					this.app.vault.modifyBinary(file, await blob.arrayBuffer());
+				} else {
+					this.app.vault.createBinary(filepath, await blob.arrayBuffer());
+				}
 				img.setAttribute('src', filename);
 			}
 		}
@@ -151,14 +135,20 @@ export default class QuipPlugin extends Plugin {
 			quip: url,
 		};
 		const title = info.title;
-		const filename = `${title}.md`;
-		//this.app.vault.create(`${title}.html`, html);
+		const filename = normalizePath(`${parent.path}/${title}.md`);
 		const file_content = `---
 ${stringifyYaml(front_matter)}
 ---
 ${markdown}`;
-		const file = await this.app.vault.create(filename, file_content);
-		this.app.workspace.getLeaf('tab').openFile(file);
+		let file = this.app.vault.getAbstractFileByPath(filename);
+		if (file && file instanceof TFile) {
+			this.app.vault.modify(file, file_content);
+		} else {
+			file = await this.app.vault.create(filename, file_content);
+		}
+		if (file instanceof TFile) {
+			this.app.workspace.getLeaf('tab').openFile(file);
+		}
 	}
 
 	async publishHTML(markdownView: MarkdownView, title: string) {

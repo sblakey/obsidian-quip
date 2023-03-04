@@ -63,6 +63,10 @@ interface QuipThreadInfo {
     updated_usec: number;
 }
 
+interface QuipRecentThreads {
+    [key:string]: QuipThreadResponse
+}
+
 export interface QuipThreadResponse {
 	thread: QuipThreadInfo;
 }
@@ -202,6 +206,11 @@ export class QuipAPIClient {
         
     }
 
+    async getRecentThreads(): Promise<QuipRecentThreads> {
+        const url = '/1/threads/recent?count=50';
+        return this.api<Record<string, string>, QuipRecentThreads>(url, null);
+    }
+
     async getThread(thread_id_or_secret_path: string): Promise<QuipThreadResponse> {
         const url = `/2/threads/${thread_id_or_secret_path}`;
         return this.api<Record<string, string>, QuipThreadResponse>(url, null);
@@ -209,6 +218,11 @@ export class QuipAPIClient {
 
     async newDocument(options: NewDocumentArguments): Promise<QuipThreadResponse> {
         return this.api<NewDocumentArguments, QuipThreadResponse>('/1/threads/new-document', options);
+    }
+
+    async searchTitles(query: string): Promise<QuipThreadResponse[]> {
+        const url = `/1/threads/search?only_match_titles=true&query=${encodeURIComponent(query)}`;
+        return this.api<Record<string, string>, QuipThreadResponse[]>(url, null);
     }
 
     buildRequest<ArgType extends Record<string, string>>(path: string, postArguments: ArgType): RequestUrlParam {

@@ -34,7 +34,7 @@ export class QuipSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		containerEl.createEl('h2', {text: 'Settings for publishing to Quip.'});
+		containerEl.createEl('h2', {text: 'Quip API settings'});
 
 		new Setting(containerEl)
 			.setName('Personal API Token')
@@ -55,6 +55,8 @@ export class QuipSettingTab extends PluginSettingTab {
 					this.plugin.settings.hostname = value;
 					await this.plugin.saveSettings();
 				}));
+
+		containerEl.createEl('h2', {text: 'Publishing to Quip'});
 		new Setting(containerEl)
 			.setName('Remove YAML front matter')
 			.setDesc('Strip leading YAML out of notes before sending to Quip')
