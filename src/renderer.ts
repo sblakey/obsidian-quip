@@ -3,7 +3,7 @@
 
 import QuipPlugin from './main';
 
-import { MarkdownRenderer, MarkdownView, TFile, Vault } from 'obsidian';
+import { getLinkpath, MarkdownRenderer, MarkdownView, parseFrontMatterEntry, TFile, Vault } from 'obsidian';
 
 interface LookupTable {
     [index: string]: string
@@ -26,6 +26,20 @@ async function postProcessRenderedHTML(plugin: QuipPlugin, inputFile: TFile, wra
     parentFiles: string[] = [])
 {
     const vault = plugin.app.vault as Vault;
+    // Fix internal links
+    for (const anchor of Array.from(wrapper.querySelectorAll('a.internal-link'))) {
+        const link =  anchor.getAttribute('data-href')
+        const file = plugin.app.metadataCache.getFirstLinkpathDest(getLinkpath(link), inputFile.path);
+        if (file && file instanceof TFile) {
+            await plugin.app.fileManager.processFrontMatter(file, (front_matter) => {
+                const quip: string = parseFrontMatterEntry(front_matter, 'quip');
+                if (quip) {
+                    anchor.setAttribute('href', quip);
+                }
+            });
+        }
+        console.log("file", file);
+    }
     // Fix <span src="image.png">
     for (const span of Array.from(wrapper.querySelectorAll('span[src$=".png"], span[src$=".jpg"], span[src$=".gif"], span[src$=".jpeg"]'))) {
         const img = createEl('img', {
@@ -104,6 +118,7 @@ export default async function render (plugin: QuipPlugin, view: MarkdownView,
     await postProcessRenderedHTML(plugin, inputFile, wrapper,
         parentFiles);
     let html = wrapper.innerHTML;
+    console.log("HTML", html);
     document.body.removeChild(wrapper);
 
     return html;
