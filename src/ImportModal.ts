@@ -59,21 +59,25 @@ export class ImportModal extends SuggestModal<QuipThread> {
 	getSuggestions(query: string): QuipThread[] {
 		if (query) {
 			const lower_query = query.toLowerCase();
+			const filter = (thread: QuipThread) => 
+					thread.link.toLowerCase().contains(lower_query) || thread?.title.toLowerCase().contains(lower_query);
+			// see if we have viable search results
 			if (this.searchQuery && lower_query.contains(this.searchQuery.toLowerCase())) {
-				const filtered_results = this.searchResults.filter((thread) => thread.link.toLowerCase().contains(lower_query) || thread?.title.toLowerCase().contains(lower_query)
-				);
+				const filtered_results = this.searchResults.filter(filter);
 				if (filtered_results.length > 0) {
 					return filtered_results;
 				}
 			}
-			const filtered_recent = this.recent.filter((thread) => thread.link.toLowerCase().contains(lower_query) || thread?.title.toLowerCase().contains(lower_query)
-			);
+			// maybe we can find a match in the recents list?
+			const filtered_recent = this.recent.filter(filter);
 			if (filtered_recent.length > 0) {
 				return filtered_recent;
 			} else {
+				// kick off a query, if it's not redundant, but respect the query lock
 				if (query && query != this.searchQuery && !this.searching) {
 					this.loadSearchResults(query);
 				}
+				// this even fi the user pastes or types a URL, that's a valid result.
 				return [{ link: query }];
 			}
 		} else {
