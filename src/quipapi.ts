@@ -1,4 +1,5 @@
 import {requestUrl, RequestUrlParam, sanitizeHTMLToDom} from 'obsidian';
+import { DEFAULT_SETTINGS } from './settings';
 
 enum RequestMethod {
     GET = "GET",
@@ -84,9 +85,15 @@ export class QuipAPIClient {
     accessToken: string;
     hostname: string;
 
+    // throws an Error if we don't have viable settings
     constructor(hostname: string, token: string) {
         this.accessToken = token;
         this.hostname = hostname;
+        if (token === DEFAULT_SETTINGS.token) {
+            throw new Error("Quip API token has not been set");
+        } else if (hostname == DEFAULT_SETTINGS.hostname) {
+            throw new Error("Quip API hostname has not been set");
+        }
     }
 
     async newHTMLDocument(html: string, title: string): Promise<QuipThreadResponse> {

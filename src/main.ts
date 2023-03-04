@@ -77,13 +77,19 @@ export default class QuipPlugin extends Plugin {
 			id: 'import',
 			name: 'Import Quip document',
 			callback: () => {
-				const client = new QuipAPIClient(this.settings.hostname, this.settings.token);
-				let url: string = null;
-				const modal = new ImportModal(this.app, client, (url) => {
-					this.importHTML(url);
-				});
-				modal.open();
-				(window as any).modal = modal;
+				try {
+					const client = new QuipAPIClient(this.settings.hostname, this.settings.token);
+					let url: string = null;
+					const modal = new ImportModal(this.app, client, (url) => {
+						this.importHTML(url);
+					});
+					modal.open();
+					(window as any).modal = modal;
+				} catch (error) {
+					console.error(error);
+					const text = error.message || JSON.stringify(error.info);
+					new Notice(text);
+				}
 			}
 		})
 
@@ -153,7 +159,6 @@ ${markdown}`;
 	}
 
 	async publishHTML(markdownView: MarkdownView, title: string) {
-		const client = new QuipAPIClient(this.settings.hostname, this.settings.token);
 		// Quip import likes to replace the first heading with the document title
 		var html = await render(this, markdownView, this.app.workspace.getActiveFile());
 		if (title) {
@@ -161,21 +166,22 @@ ${markdown}`;
 		}
 		new Notice(`Publishing to ${this.settings.hostname}...`)
 		try {
+			const client = new QuipAPIClient(this.settings.hostname, this.settings.token);
 			const response = await client.newHTMLDocument(html, title);
 			this.onSuccessfulPublish(response.thread.link);
 		} catch (error) {
 			console.error(error);
-			const text = JSON.stringify(error.info);
+			const text = error.message || JSON.stringify(error.info);
 			new Notice(text);
 		}
 	}
 
 	async updateHTML(link: string, markdownView: MarkdownView) {
-		const client = new QuipAPIClient(this.settings.hostname, this.settings.token);
 		// Quip import likes to replace the first heading with the document title
 		const html = await render(this, markdownView, this.app.workspace.getActiveFile());
 		new Notice(`Publishing to ${this.settings.hostname}...`)
 		try {
+			const client = new QuipAPIClient(this.settings.hostname, this.settings.token);
 			await client.updateHTMLDocument(link, html);
 			new SuccessModal(this.app, link).open();
 		} catch (error) {
