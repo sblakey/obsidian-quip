@@ -1,4 +1,4 @@
-import { htmlToMarkdown, MarkdownView, normalizePath, Notice, Plugin, sanitizeHTMLToDom, Setting, stringifyYaml, TFile, Vault } from 'obsidian';
+import { App, htmlToMarkdown, MarkdownView, normalizePath, Notice, Plugin, sanitizeHTMLToDom, stringifyYaml, TFile, TFolder } from 'obsidian';
 import { QuipAPIClient } from './quipapi';
 import render from './renderer';
 import { DEFAULT_SETTINGS, QuipPluginSettings, QuipSettingTab } from './settings';
@@ -17,6 +17,57 @@ export interface QuipThread {
 	link: string;
 	title?: string;
 	id?: string;
+}
+
+class AppHelper {
+	app: App;
+
+	constructor(app: App) {
+		this.app = app;
+	}
+
+	async createOrModifyBinary(filename_base: string, blob: Blob): Promise<string> {
+		const parent = this.getParentFolder();
+		const type = blob.type;
+		let extension = type.split('image/', 2).at(1);
+		if (extension == 'svg+xml') {
+			extension = 'svg';
+		}
+		const filename = `${filename_base}.${extension}`;
+		const filepath = normalizePath(`${parent.path}/${filename}`);
+		const file = this.app.vault.getAbstractFileByPath(filepath);
+		if (file && file instanceof TFile) {
+			this.app.vault.modifyBinary(file, await blob.arrayBuffer());
+		} else {
+			this.app.vault.createBinary(filepath, await blob.arrayBuffer());
+		}
+		return filename;
+	}
+
+	async createOrModifyNote(title: string, markdown: string, front_matter: any): Promise<TFile> {
+		const parent = this.getParentFolder();
+		const filename = normalizePath(`${parent.path}/${title}.md`);
+		const file_content = `---
+${stringifyYaml(front_matter)}
+---
+${markdown}`;
+		let file = this.app.vault.getAbstractFileByPath(filename);
+		if (file && file instanceof TFile) {
+			this.app.vault.modify(file, file_content);
+			return file;
+		} else {
+			return this.app.vault.create(filename, file_content);
+		}
+	}
+
+	getParentFolder(): TFolder {
+		const active_file = this.app.workspace.getActiveFile();
+		let parent = this.app.vault.getRoot();
+		if (active_file) {
+			parent = this.app.fileManager.getNewFileParent(active_file.path);
+		}
+		return parent;
+	}
 }
 
 export default class QuipPlugin extends Plugin {
@@ -97,55 +148,13 @@ export default class QuipPlugin extends Plugin {
 		this.addSettingTab(new QuipSettingTab(this.app, this));
 	}
 
-	async createOrModifyBinary(filename_base: string, blob: Blob): Promise<string> {
-		const active_file = this.app.workspace.getActiveFile();
-		let parent = this.app.vault.getRoot();
-		if (active_file) {
-			parent = this.app.fileManager.getNewFileParent(active_file.path);
-		}
-		const type = blob.type;
-		let extension = type.split('image/', 2).at(1);
-		if (extension == 'svg+xml') {
-			extension = 'svg';
-		}
-		const filename = `${filename_base}.${extension}`;
-		const filepath = normalizePath(`${parent.path}/${filename}`);
-		const file = this.app.vault.getAbstractFileByPath(filepath);
-		if (file && file instanceof TFile) {
-			this.app.vault.modifyBinary(file, await blob.arrayBuffer());
-		} else {
-			this.app.vault.createBinary(filepath, await blob.arrayBuffer());
-		}
-		return filename;
-	}
-
-	async createOrModifyNote(title: string, markdown: string, front_matter: any): Promise<TFile> {
-		const active_file = this.app.workspace.getActiveFile();
-		let parent = this.app.vault.getRoot();
-		if (active_file) {
-			parent = this.app.fileManager.getNewFileParent(active_file.path);
-		}
-		const filename = normalizePath(`${parent.path}/${title}.md`);
-		const file_content = `---
-${stringifyYaml(front_matter)}
----
-${markdown}`;
-		let file = this.app.vault.getAbstractFileByPath(filename);
-		if (file && file instanceof TFile) {
-			this.app.vault.modify(file, file_content);
-			return file;
-		} else {
-			return this.app.vault.create(filename, file_content);
-		}
-
-	}
 
 	async importHTML_IMG(img: HTMLElement, client: QuipAPIClient) {
 		const src = img.getAttribute('src');
 		if (src) {
 			const blob = await client.getBlob(src);
 			const filename_base = `${info.title.replaceAll(' ', '_')}${src.replaceAll('/', '-')}`;
-			const filename = await this.createOrModifyBinary(filename_base, blob);
+			const filename = await new AppHelper(this.app).createOrModifyBinary(filename_base, blob);
 			img.setAttribute('src', filename);
 		}
 	}
@@ -173,7 +182,7 @@ ${markdown}`;
 			quip: url,
 		};
 		const title = info.title;
-		const file = this.createOrModifyNote(info.title, markdown, front_matter);
+		const file = new AppHelper(this.app).createOrModifyNote(info.title, markdown, front_matter);
 		this.app.workspace.getLeaf('tab').openFile(await file);
 	}
 
