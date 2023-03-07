@@ -1,11 +1,10 @@
-import { App, htmlToMarkdown, MarkdownView, normalizePath, Notice, Plugin, sanitizeHTMLToDom, stringifyYaml, TFile, TFolder } from 'obsidian';
+import { MarkdownView, Notice, Plugin } from 'obsidian';
 import { QuipAPIClient } from './quipapi';
 import render from './renderer';
 import { DEFAULT_SETTINGS, QuipPluginSettings, QuipSettingTab } from './settings';
-import TurndownService from 'turndown';
-import { gfm } from 'turndown-plugin-gfm';
 import { ImportModal } from './ImportModal';
 import { SuccessModal } from './SuccessModal';
+import { Importer } from './Importer';
 
 
 interface QuipFrontMatter {
@@ -17,57 +16,6 @@ export interface QuipThread {
 	link: string;
 	title?: string;
 	id?: string;
-}
-
-class AppHelper {
-	app: App;
-
-	constructor(app: App) {
-		this.app = app;
-	}
-
-	async createOrModifyBinary(filename_base: string, blob: Blob): Promise<string> {
-		const parent = this.getParentFolder();
-		const type = blob.type;
-		let extension = type.split('image/', 2).at(1);
-		if (extension == 'svg+xml') {
-			extension = 'svg';
-		}
-		const filename = `${filename_base}.${extension}`;
-		const filepath = normalizePath(`${parent.path}/${filename}`);
-		const file = this.app.vault.getAbstractFileByPath(filepath);
-		if (file && file instanceof TFile) {
-			this.app.vault.modifyBinary(file, await blob.arrayBuffer());
-		} else {
-			this.app.vault.createBinary(filepath, await blob.arrayBuffer());
-		}
-		return filename;
-	}
-
-	async createOrModifyNote(title: string, markdown: string, front_matter: any): Promise<TFile> {
-		const parent = this.getParentFolder();
-		const filename = normalizePath(`${parent.path}/${title}.md`);
-		const file_content = `---
-${stringifyYaml(front_matter)}
----
-${markdown}`;
-		let file = this.app.vault.getAbstractFileByPath(filename);
-		if (file && file instanceof TFile) {
-			this.app.vault.modify(file, file_content);
-			return file;
-		} else {
-			return this.app.vault.create(filename, file_content);
-		}
-	}
-
-	getParentFolder(): TFolder {
-		const active_file = this.app.workspace.getActiveFile();
-		let parent = this.app.vault.getRoot();
-		if (active_file) {
-			parent = this.app.fileManager.getNewFileParent(active_file.path);
-		}
-		return parent;
-	}
 }
 
 export default class QuipPlugin extends Plugin {
@@ -132,7 +80,7 @@ export default class QuipPlugin extends Plugin {
 					const client = new QuipAPIClient(this.settings.hostname, this.settings.token);
 					let url: string = null;
 					const modal = new ImportModal(this.app, client, (url) => {
-						this.importHTML(url);
+						new Importer(this).importHTML(url);
 					});
 					modal.open();
 					(window as any).modal = modal;
@@ -148,43 +96,6 @@ export default class QuipPlugin extends Plugin {
 		this.addSettingTab(new QuipSettingTab(this.app, this));
 	}
 
-
-	async importHTML_IMG(img: HTMLElement, client: QuipAPIClient) {
-		const src = img.getAttribute('src');
-		if (src) {
-			const blob = await client.getBlob(src);
-			const filename_base = `${info.title.replaceAll(' ', '_')}${src.replaceAll('/', '-')}`;
-			const filename = await new AppHelper(this.app).createOrModifyBinary(filename_base, blob);
-			img.setAttribute('src', filename);
-		}
-	}
-
-	// Import a Quip document into an Obsidian note
-	async importHTML(url: string) {
-		const td = new TurndownService({
-			headingStyle: "atx",
-			hr: '***',
-			bulletListMarker: '-',
-			codeBlockStyle: 'fenced',
-		});
-		td.use(gfm);
-        const secret_path = url.split('.com/', 2).at(1).split('/').at(0);
-		const client = new QuipAPIClient(this.settings.hostname, this.settings.token);
-		const html = await client.getDocumentHTML(secret_path);
-		const info = (await client.getThread(secret_path)).thread;
-		const fragment = sanitizeHTMLToDom(html);
-        for (const img of Array.from(fragment.querySelectorAll('img'))) {
-			this.importHTML_IMG(img, client);
-		}
-		const markdown = td.turndown(fragment);
-		const front_matter = {
-			title: info.title,
-			quip: url,
-		};
-		const title = info.title;
-		const file = new AppHelper(this.app).createOrModifyNote(info.title, markdown, front_matter);
-		this.app.workspace.getLeaf('tab').openFile(await file);
-	}
 
 	async publishHTML(markdownView: MarkdownView, title: string) {
 		// Quip import likes to replace the first heading with the document title
