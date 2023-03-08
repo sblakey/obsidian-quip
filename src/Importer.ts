@@ -27,27 +27,18 @@ export class Importer {
 	}
 
 	async process_A(anchor: HTMLElement) {
-		console.dir(this);
-		console.log("Processing link", anchor);
 		const href = anchor.getAttribute('href');
 		if (href && this.hostname.contains(new URL(href).hostname)) {
-			console.log("href matches configured hostname", href);
 			// try to remap link to relevant Obsidian note, if one exists
 			const secret_path = href.split('.com/', 2).at(1).split('/').at(0);
 			const title = anchor.innerText;
 			const file = await this.helper.getNoteByTitle(title);
 			if (file) {
-				console.log("File found", file);
 				const frontmatter = this.app.metadataCache.getCache(file.path).frontmatter;
 				if (frontmatter) {
-					console.log("Frontmatter found", frontmatter);
 					const quip = parseFrontMatterEntry(frontmatter, "quip");
-					console.log("quip", quip);
-					console.log("secret_path", secret_path);
 					if (quip && quip.contains(secret_path)) {
-						console.log("Found matching frontmatter entry");
 						anchor.setAttribute('href', encodeURIComponent(file.path));
-						console.log("Updated anchor", anchor);
 					}
 				}
 			}
@@ -76,7 +67,6 @@ export class Importer {
 		for (const img of Array.from(fragment.querySelectorAll('img'))) {
 			await this.process_IMG(img, info);
 		}
-		console.log("Processed html", fragment);
 		const markdown = this.td.turndown(fragment);
 		const front_matter = {
 			title: info.title,

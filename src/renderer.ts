@@ -38,7 +38,6 @@ async function postProcessRenderedHTML(plugin: QuipPlugin, inputFile: TFile, wra
                 }
             });
         }
-        console.log("file", file);
     }
     // Fix <span src="image.png">
     for (const span of Array.from(wrapper.querySelectorAll('span[src$=".png"], span[src$=".jpg"], span[src$=".gif"], span[src$=".jpeg"]'))) {
@@ -118,7 +117,6 @@ export default async function render (plugin: QuipPlugin, view: MarkdownView,
     await postProcessRenderedHTML(plugin, inputFile, wrapper,
         parentFiles);
     let html = wrapper.innerHTML;
-    console.log("HTML", html);
     document.body.removeChild(wrapper);
 
     return html;
