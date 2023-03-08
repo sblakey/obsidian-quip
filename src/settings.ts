@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting, TextComponent } from 'obsidian';
+import { App, PluginSettingTab, Setting } from 'obsidian';
 import QuipPlugin from './main';
 
 

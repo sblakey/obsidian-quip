@@ -34,7 +34,7 @@ export class AppHelper {
 ${stringifyYaml(front_matter)}
 ---
 ${markdown}`;
-		let file = this.vault.getAbstractFileByPath(filename);
+		const file = this.vault.getAbstractFileByPath(filename);
 		if (file && file instanceof TFile) {
 			this.vault.modify(file, file_content);
 			return file;

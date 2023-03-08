@@ -1,4 +1,4 @@
-import { App, getLinkpath, normalizePath, parseFrontMatterEntry, sanitizeHTMLToDom } from 'obsidian';
+import { App, parseFrontMatterEntry, sanitizeHTMLToDom } from 'obsidian';
 import { QuipAPIClient } from './quipapi';
 import TurndownService from 'turndown';
 import { gfm } from 'turndown-plugin-gfm';

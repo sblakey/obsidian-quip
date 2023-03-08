@@ -116,7 +116,7 @@ export default async function render (plugin: QuipPlugin, view: MarkdownView,
     // Post-process the HTML in-place
     await postProcessRenderedHTML(plugin, inputFile, wrapper,
         parentFiles);
-    let html = wrapper.innerHTML;
+    const html = wrapper.innerHTML;
     document.body.removeChild(wrapper);
 
     return html;

@@ -35,7 +35,7 @@ export default class QuipPlugin extends Plugin {
 					// If checking is true, we're simply "checking" if the command can be run.
 					// If checking is false, then we want to actually perform the operation.
 					if (!checking) {
-						var title = null;
+						let title = null;
 						if (this.settings.prependTitle) {
 							const file = this.app.workspace.getActiveFile();
 							title = this.app.metadataCache.getFileCache(file).frontmatter?.title || file.basename;
@@ -79,7 +79,6 @@ export default class QuipPlugin extends Plugin {
 			callback: () => {
 				try {
 					const client = new QuipAPIClient(this.settings.hostname, this.settings.token);
-					let url: string = null;
 					const modal = new ImportModal(this.app, client, this.cached_recent_threads, (url) => {
 						new Importer(this).importHTML(url);
 					});
@@ -157,7 +156,7 @@ export default class QuipPlugin extends Plugin {
 	}
 
 	async tryPreload(): Promise<QuipThread[]> {
-		let recent: QuipThread[] = [];
+		const recent: QuipThread[] = [];
 		try {
 			const client = new QuipAPIClient(this.settings.hostname, this.settings.token);
 			for (const [thread_id, thread_response] of Object.entries(await client.getRecentThreads())) {
