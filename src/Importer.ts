@@ -81,8 +81,16 @@ export class Importer {
 		const front_matter = {
 			title: info.title,
 			quip: url,
+			quip_thread_imported: {
+				id: info.id,
+				updated_usec: 0,
+				updated_datetime: ''
+			}
 		};
-		const title = info.title;
+		if (info.updated_usec) {
+			front_matter.quip_thread_imported.updated_usec = info.updated_usec;
+			front_matter.quip_thread_imported.updated_datetime = new Date(info.updated_usec / 1000).toLocaleString();
+		}
 		const file = new AppHelper(this.app).createOrModifyNote(info.title, markdown, front_matter);
 		this.app.workspace.getLeaf('tab').openFile(await file);
 	}

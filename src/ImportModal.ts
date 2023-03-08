@@ -18,23 +18,19 @@ export class ImportModal extends SuggestModal<QuipThread> {
 	isOpen: boolean;
 	onInput: (input: string) => void;
 
-	constructor(app: App, quip: QuipAPIClient, onSubmit: (result: string) => void) {
+	constructor(app: App, quip: QuipAPIClient, cached_recent: Promise<QuipThread[]>, onSubmit: (result: string) => void) {
 		super(app);
 		this.quip = quip;
 		this.onSubmit = onSubmit;
 		this.setPlaceholder("Quip title or URL");
 		this.recent = [];
-		this.searchResults = [];
-		this.loadRecentThreads();
+		this.loadRecentThreads(cached_recent);
 		this.emptyStateText = "Loading recent documents from Quip";
 		this.searching = false;
 	}
 
-	async loadRecentThreads() {
-		for (const [thread_id, thread_response] of Object.entries(await this.quip.getRecentThreads())) {
-			const thread_info = thread_response.thread;
-			this.recent.push(thread_info);
-		}
+	async loadRecentThreads(cached_recent: Promise<QuipThread[]>) {
+		this.recent = await cached_recent;
 		this.emptyStateText = "No matching document found";
 		if (this.isOpen) {
 			this.onInput(this.inputEl.value);
@@ -69,7 +65,7 @@ export class ImportModal extends SuggestModal<QuipThread> {
 				}
 			}
 			// maybe we can find a match in the recents list?
-			const filtered_recent = this.recent.filter(filter);
+			const filtered_recent = (this.recent).filter(filter);
 			if (filtered_recent.length > 0) {
 				return filtered_recent;
 			} else {

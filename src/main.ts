@@ -20,6 +20,7 @@ export interface QuipThread {
 
 export default class QuipPlugin extends Plugin {
 	settings: QuipPluginSettings;
+	cached_recent_threads: Promise<QuipThread[]>;
 
 	async onload() {
 		await this.loadSettings();
@@ -79,11 +80,10 @@ export default class QuipPlugin extends Plugin {
 				try {
 					const client = new QuipAPIClient(this.settings.hostname, this.settings.token);
 					let url: string = null;
-					const modal = new ImportModal(this.app, client, (url) => {
+					const modal = new ImportModal(this.app, client, this.cached_recent_threads, (url) => {
 						new Importer(this).importHTML(url);
 					});
 					modal.open();
-					(window as any).modal = modal;
 				} catch (error) {
 					console.error(error);
 					const text = error.message || JSON.stringify(error.info);
@@ -148,10 +148,27 @@ export default class QuipPlugin extends Plugin {
 
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		this.cached_recent_threads = this.tryPreload();
 	}
 
 	async saveSettings() {
+		this.cached_recent_threads = this.tryPreload();
 		await this.saveData(this.settings);
+	}
+
+	async tryPreload(): Promise<QuipThread[]> {
+		let recent: QuipThread[] = [];
+		try {
+			const client = new QuipAPIClient(this.settings.hostname, this.settings.token);
+			for (const [thread_id, thread_response] of Object.entries(await client.getRecentThreads())) {
+				const thread_info = thread_response.thread;
+				recent.push(thread_info);
+			}
+		} catch (error) {
+			// swallow this error
+			console.error(error);
+		}
+		return recent;
 	}
 }
 
