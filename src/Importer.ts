@@ -1,4 +1,4 @@
-import { App, prepareSimpleSearch, sanitizeHTMLToDom } from 'obsidian';
+import { App, getLinkpath, normalizePath, parseFrontMatterEntry, sanitizeHTMLToDom } from 'obsidian';
 import { QuipAPIClient } from './quipapi';
 import TurndownService from 'turndown';
 import { gfm } from 'turndown-plugin-gfm';
@@ -13,7 +13,7 @@ export class Importer {
 	hostname: string;
 
 	constructor(plugin: QuipPlugin) {
-		this.hostname = plugin.settings.hostname.toLowerCase();
+		this.hostname = plugin.settings.hostname;
 		this.client = new QuipAPIClient(plugin.settings.hostname, plugin.settings.token);
 		this.td = new TurndownService({
 			headingStyle: "atx",
@@ -27,13 +27,30 @@ export class Importer {
 	}
 
 	async process_A(anchor: HTMLElement) {
+		console.dir(this);
+		console.log("Processing link", anchor);
 		const href = anchor.getAttribute('href');
-		if (href && href.toLowerCase().contains(this.hostname)) {
+		if (href && this.hostname.contains(new URL(href).hostname)) {
+			console.log("href matches configured hostname", href);
 			// try to remap link to relevant Obsidian note, if one exists
-			const secret_path = url.split('.com/', 2).at(1).split('/').at(0);
-			const canonical_url = `https://${this.hostname}/${secret_path}`;
-			const query = `"quip: ${canonical_url}"`;
-			prepareSimpleSearch();
+			const secret_path = href.split('.com/', 2).at(1).split('/').at(0);
+			const title = anchor.innerText;
+			const file = await this.helper.getNoteByTitle(title);
+			if (file) {
+				console.log("File found", file);
+				const frontmatter = this.app.metadataCache.getCache(file.path).frontmatter;
+				if (frontmatter) {
+					console.log("Frontmatter found", frontmatter);
+					const quip = parseFrontMatterEntry(frontmatter, "quip");
+					console.log("quip", quip);
+					console.log("secret_path", secret_path);
+					if (quip && quip.contains(secret_path)) {
+						console.log("Found matching frontmatter entry");
+						anchor.setAttribute('href', encodeURIComponent(file.path));
+						console.log("Updated anchor", anchor);
+					}
+				}
+			}
 		}
 	}
 
@@ -54,11 +71,12 @@ export class Importer {
 		const info = (await this.client.getThread(secret_path)).thread;
 		const fragment = sanitizeHTMLToDom(html);
 		for (const anchor of Array.from(fragment.querySelectorAll('a'))) {
-			this.process_A(anchor);
+			await this.process_A(anchor);
 		}
 		for (const img of Array.from(fragment.querySelectorAll('img'))) {
-			this.process_IMG(img, info);
+			await this.process_IMG(img, info);
 		}
+		console.log("Processed html", fragment);
 		const markdown = this.td.turndown(fragment);
 		const front_matter = {
 			title: info.title,

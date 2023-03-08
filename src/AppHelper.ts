@@ -1,4 +1,4 @@
-import { App, normalizePath, stringifyYaml, TFile, TFolder, Vault } from 'obsidian';
+import { App, getLinkpath, normalizePath, stringifyYaml, TFile, TFolder, Vault } from 'obsidian';
 
 export class AppHelper {
 	app: App;
@@ -41,6 +41,10 @@ ${markdown}`;
 		} else {
 			return this.vault.create(filename, file_content);
 		}
+	}
+
+	async getNoteByTitle(title: string): Promise<TFile | null> {
+		return this.app.metadataCache.getFirstLinkpathDest(getLinkpath(title), this.app.vault.getRoot().path);
 	}
 
 	getParentFolder(): TFolder {
