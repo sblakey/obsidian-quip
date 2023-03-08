@@ -4,7 +4,8 @@ This is a simple plugin for Obsidian (https://obsidian.md) to talk with Quip (th
 
 **Note:** The Obsidian API is still in early beta and is subject to change at any time!
 
-Currently, this plugin exposes two Commands:
+Currently, this plugin exposes three Commands:
+- **Import Quip Document**, which tries to transform a Quip document into a new Obsidian note.
 - **Publish as new Quip document**, which uses Obsidican internals to create an HTML document for import to Quip.
 - **Update existing Quip document**, which overwrites the existing Quip document with a fresh rendering from Obsidian.
 
@@ -29,28 +30,34 @@ Note that you can only have one "dev token" at a time across all of your automat
 
 Test table based on Obsdian's [How To Format Your Notes](https://help.obsidian.md/How+to/Format+your+notes)
 
-| Obsidian Markdown | Publish to Quip        |
-| ----------------- | ---------------------- |
-| Internal linking  | :x:                    |
-| Embeds            | see below              |
-| Headings          | :white_check_mark:     |
-| Unnumbered Lists  | :white_check_mark:     |
-| Numbered Lists    | :white_check_mark:     |
-| nested Lists      | :white_check_mark:     |
-| Task Lists        | :x:                    |
-| External images   | :white_check_mark:     |
-| resizing images   | :x:                    |
-| embedded images   | :white_check_mark:     |
-| Block Quotes      | :x:                    |
-| Tables            | :white_check_mark:     |
-| Footnotes         | :x:                    |
-| Math              | :x:                    |
-| Code              | :white_check_mark:     |
-| Highlighting      | :x:                    |
-| Callouts          | :x:                    |
-| Comments          | :white_check_mark:     |
-| Embedded Canvas   | :x:                    |
-| Mermaid           | :x:                    |
+| Obsidian Markdown | Publish to Quip        | Import from Quip |
+| ----------------- | ---------------------- | ---------------- |
+| Internal linking  | :x:                    | :x:              |
+| Embeds            | see below              | :x:              |
+| Headings          | :white_check_mark:     | :white_check_mark: |
+| Unnumbered Lists  | :white_check_mark:     | :white_check_mark: |
+| Numbered Lists    | :white_check_mark:     | :white_check_mark: |
+| nested Lists      | :white_check_mark:     | :x:              |
+| Task Lists        | :x:                    | :x:              |
+| External images   | :white_check_mark:     | :x:              |
+| resizing images   | :x:                    | :x:              |
+| embedded images   | :white_check_mark:     | :white_check_mark: |
+| Block Quotes      | :x:                    | :x:              |
+| Tables            | :white_check_mark:     | :bug:            |
+| Footnotes         | :x:                    | :x:              |
+| Math              | :x:                    | :x:              |
+| Code              | :white_check_mark:     | :x:              |
+| Highlighting      | :x:                    | :x:              |
+| Callouts          | :x:                    | :x:              |
+| Comments          | :white_check_mark:     | :x:              |
+| Embedded Canvas   | :x:                    | :x:              |
+| Mermaid           | :x:                    | :x:              |
+
+### Link remapping
+
+When **publishing** to Quip, this plugin will attempt to remap links-to-Obsidian-notes to links-to-Quip-documents, if it finds that the linked note has been previously published or imported. This is done by examining the `quip` key in YAML frontmatter.
+
+Similarly, when **importing** from Quip, this plugin will check for Obsidian documents with the same name with appropriate `quip` keys, and remap the links to local nots.
 
 ### Configurable processing
 
@@ -66,14 +73,4 @@ This plugin understands two possible attributes in your note's [YAML front matte
 
 - `quip`: URL to the quip document published from this note. If present, this URL will be used for the **Update existing Quip document** command.
 - `title`: If present when the note is first published, will **override** the Note name as a document title in Quip. Note that you will also need to turn on the "Add Note name as Quip document title" setting to enable this feature, and that this plugin cannot **update** the titles of notes.
-
-## Installing this plugin as a Beta Tester
-
-1. Install [BRAT](https://github.com/TfTHacker/obsidian42-brat) from the Community Plugins in Obsidian
-2. Copy the link https://github.com/sblakey/obsidian-quip
-3. Open the command palette and run the command **BRAT: Add a beta plugin for testing**
-4. Using the link from step 2, copy that into the modal that opens up
-5. Click on Add Plugin -- wait a few seconds and BRAT will tell you what is going on
-6. After BRAT confirms the installation, in Settings go to the **Community plugins ** tab.
-7. Refresh the list of plugins
-8. Find the beta plugin you just installed - "Obsidian Quip" - and Enable it.
+- `quip_thread`: Attributes of the Quip "thread" used for the most recent import.
