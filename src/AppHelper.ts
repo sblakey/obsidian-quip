@@ -55,4 +55,15 @@ ${markdown}`;
 		}
 		return parent;
 	}
+
+	async updateNote(file: TFile, markdown: string, new_front_matter: any): Promise<void> {
+		const cached_front_matter = this.app.metadataCache.getFileCache(file).frontmatter;
+		const front_matter = {...cached_front_matter, ...new_front_matter};
+		delete front_matter.position;
+		const file_content = `---
+${stringifyYaml(front_matter)}
+---
+${markdown}`;
+		return this.vault.modify(file, file_content);
+	}
 }

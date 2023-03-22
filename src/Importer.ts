@@ -1,4 +1,4 @@
-import { App, parseFrontMatterEntry, sanitizeHTMLToDom } from 'obsidian';
+import { App, parseFrontMatterEntry, sanitizeHTMLToDom, TFile } from 'obsidian';
 import { QuipAPIClient } from './quipapi';
 import TurndownService from 'turndown';
 import { gfm } from 'turndown-plugin-gfm';
@@ -56,7 +56,7 @@ export class Importer {
 	}
 
 	// Import a Quip document into an Obsidian note
-	async importHTML(url: string) {
+	async importHTML(url: string, active_file?: TFile) {
 		const secret_path = url.split('.com/', 2).at(1).split('/').at(0);
 		const html = await this.client.getDocumentHTML(secret_path);
 		const info = (await this.client.getThread(secret_path)).thread;
@@ -81,7 +81,11 @@ export class Importer {
 			front_matter.quip_thread_imported.updated_usec = info.updated_usec;
 			front_matter.quip_thread_imported.updated_datetime = new Date(info.updated_usec / 1000).toLocaleString();
 		}
-		const file = new AppHelper(this.app).createOrModifyNote(info.title, markdown, front_matter);
-		this.app.workspace.getLeaf('tab').openFile(await file);
+		if (typeof active_file === 'undefined') {
+			const file = this.helper.createOrModifyNote(info.title, markdown, front_matter);
+			this.app.workspace.getLeaf('tab').openFile(await file);
+		} else {
+			this.helper.updateNote(active_file, markdown, front_matter);
+		}
 	}
 }

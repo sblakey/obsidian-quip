@@ -89,7 +89,30 @@ export default class QuipPlugin extends Plugin {
 					new Notice(text);
 				}
 			}
-		})
+		});
+
+		this.addCommand({
+			id: 'refresh',
+			name: 'Refresh note from Quip document',
+			checkCallback: (checking: boolean) => {
+				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
+				// Conditions to check
+				if (markdownView) {
+					// If checking is true, we're simply "checking" if the command can be run.
+					// If checking is false, then we want to actually perform the operation.
+					const link = this.app.metadataCache.getFileCache(this.app.workspace.getActiveFile()).frontmatter?.quip;
+					if (link) {
+						if (!checking && link) {
+							new Importer(this).importHTML(link, this.app.workspace.getActiveFile());
+						}
+
+						// This command will only show up in Command Palette when the check function returns true
+						return true;
+					}
+				}
+				return false;
+			}
+		});
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new QuipSettingTab(this.app, this));
@@ -98,7 +121,7 @@ export default class QuipPlugin extends Plugin {
 
 	async publishHTML(markdownView: MarkdownView, title: string) {
 		// Quip import likes to replace the first heading with the document title
-		var html = await render(this, markdownView, this.app.workspace.getActiveFile());
+		let html = await render(this, markdownView, this.app.workspace.getActiveFile());
 		if (title) {
 			html = `<h1>${title}</h1>${html}`
 		}
