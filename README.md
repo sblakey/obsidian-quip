@@ -28,6 +28,8 @@ Note that you can only have one "dev token" at a time across all of your automat
 
 ## What Works, What Doesn't
 
+Currently, the Quip API rejects document creation for large notes (more than 1 MB). This is an easy limit to hit for documents with images, since they are currently embedded as inline images with data urls, before sending to Quip.
+
 Test table based on Obsdian's [How To Format Your Notes](https://help.obsidian.md/How+to/Format+your+notes)
 
 | Obsidian Markdown | Publish to Quip        | Import from Quip |
