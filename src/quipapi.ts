@@ -122,25 +122,32 @@ export class QuipAPIClient {
 
     async updateHTMLDocument(link: string, html: string): Promise<QuipThreadResponse[]> {
         const secret_path = link.split('.com/', 2).at(1).split('/').at(0);
-        const marker = "DELETE" + Date.now();
+        const marker = "QUIP-OBSIDIAN-DELETE-MARKER-" + Date.now();
         const prepend_html = `${html}
         <h1>${marker}</h1>
-        <p><em>Delete after this marker</em</p>`;   
+        <p><em>Everything after the <strong>${marker}</strong> h1 should be deleted shortly. Due to Quip limitations, we need to delete each h1 header separately.</em></p>`;
         const current_html = (await this.prependHTML(secret_path, prepend_html)).html;
+
         const dom = sanitizeHTMLToDom(current_html);
         const promises: Promise<QuipThreadResponse>[] = [];
-        // find and remore the highest level headers
-        // this removes all content "under" those headers,
-        // according to a logical document outline that is unrelated to DOM
+
+        // Find and remove all h1 headers after the marker, letting us remove
+		// all previous content with #(h1 headers) + 1 API calls
         let marker_found = false;
         const section_headers = dom.querySelectorAll('h1');
         for (const section_header of Array.from(section_headers)) {
-            if (marker_found || section_header.getText() == marker) {
+            if (section_header.getText() == marker) {
                 marker_found = true;
-                promises.push(this.deleteDocumentRange(secret_path, section_header.getText()));
+                console.debug(`Found deletion marker: ${section_header.getText()}`)
+            } else if (marker_found) {
+                console.debug(`Deleting h1 header: ${section_header.getText()}`)
+                promises.push(this.deleteSection(secret_path, section_header.getAttr('id')))
             }
         }
-        return Promise.all(promises);
+
+        const responses = await Promise.all(promises)
+        responses.push(await this.deleteDocumentRange(secret_path, marker))
+        return Promise.resolve(responses);
     }
 
     async getThreadHTML(options: GetThreadHTMLArguments): Promise<QuipThreadHTMLResponse> {
@@ -202,7 +209,7 @@ export class QuipAPIClient {
                 case 401:
                     throw new Error('Quip authorization failed')
                 case 404:
-                    throw new Error('Document not found in Quip');
+                    throw new Error(`Document not found in Quip: ${url}`);
                 default:
                     throw new Error(`Quip server error: ${status}: ${response.text}`)
             }
@@ -259,7 +266,7 @@ export class QuipAPIClient {
                 case 401:
                     throw new Error('Quip authorization failed')
                 case 404:
-                    throw new Error('Document not found in Quip');
+                    throw new Error(`Document not found in Quip: ${path}`);
                 default:
                     throw new Error(`Quip server error: ${status}: ${await response.text}`)
             }

@@ -144,7 +144,7 @@ export default class QuipPlugin extends Plugin {
 		try {
 			const client = new QuipAPIClient(this.settings.hostname, this.settings.token);
 			await client.updateHTMLDocument(link, html);
-			new SuccessModal(this.app, link).open();
+			new SuccessModal(this.app, link, `If your Quip document hasn't updated yet, try refreshing.`).open();
 		} catch (error) {
 			console.error("Failure invoking Quip APIs", error);
 			console.dir(error);
