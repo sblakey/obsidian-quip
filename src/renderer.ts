@@ -82,8 +82,9 @@ async function postProcessRenderedHTML(plugin: QuipPlugin, inputFile: TFile, wra
                         const markdown = await vault.read(file);
                         const newParentFiles = [...parentFiles];
                         newParentFiles.push(inputFile.path);
-                        // TODO: because of this cast, embedded notes won't be able to handle complex plugins (eg DataView)
-                        const html = await render(plugin, { data: markdown } as MarkdownView, file, newParentFiles);
+                        const view = new MarkdownView(plugin.app.workspace.getLeaf(false)) as MarkdownView;
+                        view.data = markdown;
+                        const html = await render(plugin, view, file, newParentFiles);
                         span.outerHTML = html;
                     }
                 } catch (e) {
@@ -111,7 +112,7 @@ export default async function render (plugin: QuipPlugin, view: MarkdownView,
     wrapper.style.display = 'hidden';
     document.body.appendChild(wrapper);
     const sourcePath = inputFile.parent.path;
-    await MarkdownRenderer.renderMarkdown(markdown, wrapper, sourcePath, view);
+    await MarkdownRenderer.render(plugin.app, markdown, wrapper, sourcePath, view);
 
     // Post-process the HTML in-place
     await postProcessRenderedHTML(plugin, inputFile, wrapper,
