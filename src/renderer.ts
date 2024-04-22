@@ -23,7 +23,10 @@ const mimeTypeTable : LookupTable = {
 
 
 
-async function postProcessRenderedHTML(plugin: QuipPlugin, inputFile: TFile, wrapper: HTMLElement,
+async function postProcessRenderedHTML(plugin: QuipPlugin,
+    inputFile: TFile,
+    wrapper: HTMLElement,
+    view: MarkdownView,
     parentFiles: string[] = [])
 {
     const vault = plugin.app.vault as Vault;
@@ -38,7 +41,7 @@ async function postProcessRenderedHTML(plugin: QuipPlugin, inputFile: TFile, wra
     }
     if (plugin.settings.inlineEmbeds) {
         // Fix <img class='internal-embed' src='file_in_vault'>
-        await fixInternalEmbeds(wrapper, inputFile, plugin, vault, parentFiles);
+        await fixInternalEmbeds(wrapper, inputFile, plugin, vault, view, parentFiles);
     }
 
 	const fixableBlockquotes = Array.from(wrapper.querySelectorAll('blockquote > p:only-child'))
@@ -56,7 +59,12 @@ async function postProcessRenderedHTML(plugin: QuipPlugin, inputFile: TFile, wra
     }
 }
 
-async function fixInternalEmbeds(wrapper: HTMLElement, inputFile: TFile, plugin: QuipPlugin, vault: Vault, parentFiles: string[]) {
+async function fixInternalEmbeds(wrapper: HTMLElement,
+        inputFile: TFile,
+        plugin: QuipPlugin,
+        vault: Vault, 
+        view: MarkdownView,
+        parentFiles: string[]) {
     for (const span of Array.from(wrapper.querySelectorAll('img.internal-embed'))) {
         const src = span.getAttribute('src');
         if (src) {
@@ -67,12 +75,12 @@ async function fixInternalEmbeds(wrapper: HTMLElement, inputFile: TFile, plugin:
     for (const span of Array.from(wrapper.querySelectorAll('span.internal-embed'))) {
         const src = span.getAttribute('src');
         if (src) {
-            await fixInternalEmbedSpanWithSrc(inputFile, plugin, src, parentFiles, span, vault);
+            await fixInternalEmbedSpanWithSrc(inputFile, plugin, src, view, parentFiles, span, vault);
         }
     }
 }
 
-async function fixInternalEmbedSpanWithSrc(inputFile: TFile, plugin: QuipPlugin, src: string, parentFiles: string[], span: Element, vault: Vault) {
+async function fixInternalEmbedSpanWithSrc(inputFile: TFile, plugin: QuipPlugin, src: string, view: MarkdownView, parentFiles: string[], span: Element, vault: Vault) {
     const subfolder = inputFile.parent;
     const file = plugin.app.metadataCache.getFirstLinkpathDest(src, subfolder.path);
     try {
@@ -82,7 +90,7 @@ async function fixInternalEmbedSpanWithSrc(inputFile: TFile, plugin: QuipPlugin,
             // Then our link processing happens afterwards
             span.outerHTML = `<a href="${file}">${span.innerHTML}</a>`;
         } else {
-            const html = await renderFile(vault, file, parentFiles, inputFile, plugin);
+            const html = await renderFile(vault, file, view, parentFiles, inputFile, plugin);
             span.outerHTML = html;
         }
     } catch (e) {
@@ -130,11 +138,10 @@ async function fixAnchorUsingFile(plugin: QuipPlugin, anchor: Element, file: TFi
     });
 }
 
-async function renderFile(vault: Vault, file: TFile, parentFiles: string[], inputFile: TFile, plugin: QuipPlugin) {
+async function renderFile(vault: Vault, file: TFile, view: MarkdownView, parentFiles: string[], inputFile: TFile, plugin: QuipPlugin) {
     const markdown = await vault.read(file);
     const newParentFiles = [...parentFiles];
     newParentFiles.push(inputFile.path);
-    const view = new MarkdownView(plugin.app.workspace.getLeaf(false)) as MarkdownView;
     view.data = markdown;
     const html = await render(plugin, view, file, newParentFiles);
     return html;
@@ -153,7 +160,7 @@ export default async function render(plugin: QuipPlugin, view: MarkdownView,
     await MarkdownRenderer.render(plugin.app, markdown, wrapper, sourcePath, view);
 
     // Post-process the HTML in-place
-    await postProcessRenderedHTML(plugin, inputFile, wrapper,
+    await postProcessRenderedHTML(plugin, inputFile, wrapper, view,
         parentFiles);
     const html = wrapper.innerHTML;
     document.body.removeChild(wrapper);
