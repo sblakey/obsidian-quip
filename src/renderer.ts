@@ -94,6 +94,15 @@ async function postProcessRenderedHTML(plugin: QuipPlugin, inputFile: TFile, wra
             }
         }
     }
+
+	const fixableBlockquotes = Array.from(wrapper.querySelectorAll('blockquote > p:only-child'))
+	fixableBlockquotes.forEach(e => e.replaceWith(...Array.from(e.childNodes)))
+
+	const consecutiveP = Array.from(wrapper.querySelectorAll('p + p'))
+	consecutiveP.forEach(e => {
+		const spacer = createEl('br')
+		e.before(spacer)
+	})
     // Remove YAML frontmatter from the output
     if (plugin.settings.removeYAML) {
         Array.from(wrapper.querySelectorAll('.frontmatter, .frontmatter-container'))
