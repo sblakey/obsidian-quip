@@ -2,7 +2,7 @@
 	"id": "quip",
 	"name": "Quip",
 	"version": "1.0.6",
-	"minAppVersion": "1.0.0",
+	"minAppVersion": "1.4.0",
 	"description": "This plugin provides commands to publish Markdown documents to Quip.com",
 	"author": "Sean Blakey",
 	"authorUrl": "https://hachyderm.io/@seanb",
