@@ -1,7 +1,7 @@
 {
 	"id": "quip",
 	"name": "Quip",
-	"version": "1.0.6",
+	"version": "1.1.0",
 	"minAppVersion": "1.4.0",
 	"description": "This plugin provides commands to publish Markdown documents to Quip.com",
 	"author": "Sean Blakey",

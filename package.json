@@ -1,6 +1,6 @@
 {
 	"name": "quip",
-	"version": "1.0.6",
+	"version": "1.1.0",
 	"description": "Obsidian plugin to enable publishing to Quip",
 	"main": "main.js",
 	"scripts": {
