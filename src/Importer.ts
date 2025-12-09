@@ -28,7 +28,7 @@ export class Importer {
 
 	async process_A(anchor: HTMLElement) {
 		const href = anchor.getAttribute('href');
-		if (href && this.hostname.contains(new URL(href).hostname)) {
+		if (href && (new URL(href).protocol == 'https:') &&  this.hostname.contains(new URL(href).hostname)) {
 			// try to remap link to relevant Obsidian note, if one exists
 			const secret_path = href.split('.com/', 2).at(1).split('/').at(0);
 			const title = anchor.innerText;
