@@ -29,7 +29,7 @@ export class AppHelper {
 
 	async createOrModifyNote(title: string, markdown: string, front_matter: any): Promise<TFile> {
 		const parent = this.getParentFolder();
-		const filename = normalizePath(`${parent.path}/${title}.md`);
+		const filename = normalizePath(`${parent.path}/${this.sanitizeFileName(title)}.md`);
 		const file_content = `---
 ${stringifyYaml(front_matter)}
 ---
@@ -54,6 +54,23 @@ ${markdown}`;
 			parent = this.app.fileManager.getNewFileParent(active_file.path);
 		}
 		return parent;
+	}
+
+	sanitizeFileName(name: string) {
+		let illegalRe = /[\/\?<>\\:\*\|"]/g;
+		let reservedRe = /^\.+$/;
+		let windowsReservedRe = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\..*)?$/i;
+		let windowsTrailingRe = /[\. ]+$/;
+		let startsWithDotRe = /^\./; // Regular expression to match filenames starting with "."
+		let badLinkRe = /[\[\]#|^]/g; // Regular expression to match characters that interferes with links: [ ] # | ^
+
+		return name
+			.replace(illegalRe, '')
+			.replace(reservedRe, '')
+			.replace(windowsReservedRe, '')
+			.replace(windowsTrailingRe, '')
+			.replace(startsWithDotRe, '')
+			.replace(badLinkRe, '');
 	}
 
 	async updateNote(file: TFile, markdown: string, new_front_matter: any): Promise<void> {
